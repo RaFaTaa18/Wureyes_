@@ -1,4 +1,7 @@
-import { FormEvent, useState } from "react";
+import {
+  useState,
+  type FormEvent,
+} from "react";
 import "./Contact.css";
 
 interface ContactForm {

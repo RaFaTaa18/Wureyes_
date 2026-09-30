@@ -1,8 +1,8 @@
 import {
-  ChangeEvent,
-  FormEvent,
   useEffect,
   useState,
+  type ChangeEvent,
+  type FormEvent,
 } from "react";
 import "./AdminPortfolio.css";
 

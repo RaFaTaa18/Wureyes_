@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./AdminBookings.css";
 
 interface Booking {
@@ -9,26 +9,85 @@ interface Booking {
   event_date: string;
   location: string | null;
   message: string | null;
+
   status:
     | "pending"
     | "confirmed"
     | "completed"
     | "cancelled";
+
   created_at: string;
+
   service_name: string;
   service_price: number | null;
+
+  drive_folder_url?: string | null;
+  selection_token?: string | null;
+  selected_photos?: number;
 }
+
+interface Selection {
+  id: number;
+  file_id: string;
+  file_name: string;
+  file_url: string | null;
+  thumbnail_url: string | null;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface SelectionData {
+  booking: {
+    id: number;
+    client_name: string;
+    email: string;
+    event_date: string;
+    service_name: string;
+  };
+
+  total_selected: number;
+  note: string | null;
+  selections: Selection[];
+}
+
+const API_URL = "http://localhost:5000";
 
 export default function AdminBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const token = sessionStorage.getItem("wureyes_token");
+  const [driveUrls, setDriveUrls] =
+    useState<Record<number, string>>({});
+
+  const [savingDrive, setSavingDrive] =
+    useState<number | null>(null);
+
+  const [selectedBooking, setSelectedBooking] =
+    useState<number | null>(null);
+
+  const [selectionData, setSelectionData] =
+    useState<SelectionData | null>(null);
+
+  const [loadingSelections, setLoadingSelections] =
+    useState(false);
+
+  const [search, setSearch] = useState("");
+
+  const [statusFilter, setStatusFilter] =
+    useState<"all" | Booking["status"]>("all");
+
+  const token = sessionStorage.getItem(
+    "wureyes_token"
+  );
 
   async function loadBookings() {
     if (!token) {
-      setError("Session expired. Please login again.");
+      setError(
+        "Session expired. Please login again."
+      );
+
       setLoading(false);
       return;
     }
@@ -38,7 +97,7 @@ export default function AdminBookings() {
       setError("");
 
       const response = await fetch(
-        "http://localhost:5000/api/bookings",
+        `${API_URL}/api/bookings`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -49,20 +108,42 @@ export default function AdminBookings() {
       const result = await response.json();
 
       if (response.status === 401) {
-        sessionStorage.removeItem("wureyes_token");
-        sessionStorage.removeItem("wureyes_user");
+        sessionStorage.removeItem(
+          "wureyes_token"
+        );
 
-        window.location.href = "/admin/login";
+        sessionStorage.removeItem(
+          "wureyes_user"
+        );
+
+        window.location.href =
+          "/admin/login";
+
         return;
       }
 
-      if (!response.ok || !result.success) {
+      if (
+        !response.ok ||
+        !result.success
+      ) {
         throw new Error(
-          result.message || "Failed to load bookings"
+          result.message ||
+            "Failed to load bookings"
         );
       }
 
       setBookings(result.data);
+
+      const urls: Record<number, string> = {};
+
+      result.data.forEach(
+        (booking: Booking) => {
+          urls[booking.id] =
+            booking.drive_folder_url || "";
+        }
+      );
+
+      setDriveUrls(urls);
     } catch (error) {
       setError(
         error instanceof Error
@@ -83,7 +164,10 @@ export default function AdminBookings() {
     status: Booking["status"]
   ) {
     if (!token) {
-      setError("Session expired. Please login again.");
+      setError(
+        "Session expired. Please login again."
+      );
+
       return;
     }
 
@@ -91,13 +175,15 @@ export default function AdminBookings() {
       setError("");
 
       const response = await fetch(
-        `http://localhost:5000/api/bookings/${id}/status`,
+        `${API_URL}/api/bookings/${id}/status`,
         {
           method: "PATCH",
+
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
+
           body: JSON.stringify({
             status,
           }),
@@ -106,21 +192,27 @@ export default function AdminBookings() {
 
       const result = await response.json();
 
-      if (!response.ok || !result.success) {
+      if (
+        !response.ok ||
+        !result.success
+      ) {
         throw new Error(
-          result.message || "Failed to update booking"
+          result.message ||
+            "Failed to update booking"
         );
       }
 
-      setBookings((current) =>
-        current.map((booking) =>
-          booking.id === id
-            ? {
-                ...booking,
-                status,
-              }
-            : booking
-        )
+      setBookings(
+        (current) =>
+          current.map(
+            (booking) =>
+              booking.id === id
+                ? {
+                    ...booking,
+                    status,
+                  }
+                : booking
+          )
       );
     } catch (error) {
       setError(
@@ -131,8 +223,248 @@ export default function AdminBookings() {
     }
   }
 
-  function formatDate(date: string) {
-    return new Date(date).toLocaleDateString(
+  async function saveDriveFolder(
+    bookingId: number
+  ) {
+    if (!token) {
+      setError(
+        "Session expired. Please login again."
+      );
+
+      return;
+    }
+
+    const driveUrl =
+      driveUrls[bookingId]?.trim();
+
+    if (!driveUrl) {
+      setError(
+        "Masukkan URL folder Google Drive terlebih dahulu."
+      );
+
+      return;
+    }
+
+    try {
+      setSavingDrive(bookingId);
+      setError("");
+
+      const response = await fetch(
+        `${API_URL}/api/photo-selection/admin/bookings/${bookingId}`,
+        {
+          method: "PATCH",
+
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+
+          body: JSON.stringify({
+            drive_folder_url: driveUrl,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.status === 401) {
+        sessionStorage.removeItem(
+          "wureyes_token"
+        );
+
+        sessionStorage.removeItem(
+          "wureyes_user"
+        );
+
+        window.location.href =
+          "/admin/login";
+
+        return;
+      }
+
+      if (
+        !response.ok ||
+        !result.success
+      ) {
+        throw new Error(
+          result.message ||
+            "Failed to save Google Drive folder"
+        );
+      }
+
+      setBookings(
+        (current) =>
+          current.map(
+            (booking) =>
+              booking.id === bookingId
+                ? {
+                    ...booking,
+                    drive_folder_url:
+                      driveUrl,
+                    selection_token:
+                      result.data
+                        ?.selection_token ||
+                      booking.selection_token,
+                  }
+                : booking
+          )
+      );
+
+      alert(
+        "Google Drive berhasil dihubungkan."
+      );
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to save Google Drive folder"
+      );
+    } finally {
+      setSavingDrive(null);
+    }
+  }
+
+  async function loadSelections(
+    bookingId: number
+  ) {
+    if (!token) {
+      setError(
+        "Session expired. Please login again."
+      );
+
+      return;
+    }
+
+    try {
+      setLoadingSelections(true);
+      setError("");
+      setSelectionData(null);
+      setSelectedBooking(bookingId);
+
+      const response = await fetch(
+        `${API_URL}/api/photo-selection/admin/bookings/${bookingId}/selections`,
+        {
+          method: "GET",
+
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+          },
+        }
+      );
+
+      const result =
+        await response.json();
+
+      if (response.status === 401) {
+        sessionStorage.removeItem(
+          "wureyes_token"
+        );
+
+        sessionStorage.removeItem(
+          "wureyes_user"
+        );
+
+        window.location.href =
+          "/admin/login";
+
+        return;
+      }
+
+      if (
+        !response.ok ||
+        !result.success
+      ) {
+        throw new Error(
+          result.message ||
+            "Failed to load photo selections"
+        );
+      }
+
+      setSelectionData(
+        result.data
+      );
+    } catch (error) {
+      console.error(
+        "LOAD SELECTIONS ERROR:",
+        error
+      );
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to load photo selections"
+      );
+
+      setSelectedBooking(null);
+    } finally {
+      setLoadingSelections(false);
+    }
+  }
+
+  function closeSelections() {
+    setSelectedBooking(null);
+    setSelectionData(null);
+  }
+
+  function getSelectionUrl(
+    booking: Booking
+  ) {
+    if (!booking.selection_token) {
+      return "";
+    }
+
+    return `${window.location.origin}/select/${booking.selection_token}`;
+  }
+
+  function openSelectionLink(
+    booking: Booking
+  ) {
+    const url =
+      getSelectionUrl(booking);
+
+    if (!url) {
+      return;
+    }
+
+    window.open(
+      url,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }
+
+  async function copySelectionLink(
+    booking: Booking
+  ) {
+    const url =
+      getSelectionUrl(booking);
+
+    if (!url) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(
+        url
+      );
+
+      alert(
+        "Link seleksi berhasil disalin."
+      );
+    } catch {
+      setError(
+        "Gagal menyalin link."
+      );
+    }
+  }
+
+  function formatDate(
+    date: string
+  ) {
+    return new Date(
+      date
+    ).toLocaleDateString(
       "id-ID",
       {
         day: "2-digit",
@@ -142,18 +474,24 @@ export default function AdminBookings() {
     );
   }
 
-  function formatPrice(price: number | null) {
+  function formatPrice(
+    price: number | null
+  ) {
     if (price === null) {
       return "-";
     }
 
-    return `Rp ${Number(price).toLocaleString(
-      "id-ID"
-    )}`;
+    return `Rp ${Number(
+      price
+    ).toLocaleString("id-ID")}`;
   }
 
-  function formatCreatedAt(date: string) {
-    return new Date(date).toLocaleString(
+  function formatCreatedAt(
+    date: string
+  ) {
+    return new Date(
+      date
+    ).toLocaleString(
       "id-ID",
       {
         day: "2-digit",
@@ -165,204 +503,936 @@ export default function AdminBookings() {
     );
   }
 
+  const statistics = useMemo(() => {
+    return {
+      total: bookings.length,
+
+      pending: bookings.filter(
+        (booking) =>
+          booking.status === "pending"
+      ).length,
+
+      confirmed: bookings.filter(
+        (booking) =>
+          booking.status === "confirmed"
+      ).length,
+
+      completed: bookings.filter(
+        (booking) =>
+          booking.status === "completed"
+      ).length,
+    };
+  }, [bookings]);
+
+  const filteredBookings =
+    useMemo(() => {
+      const query =
+        search.trim().toLowerCase();
+
+      return bookings.filter(
+        (booking) => {
+          const matchesSearch =
+            !query ||
+            booking.client_name
+              .toLowerCase()
+              .includes(query) ||
+            booking.email
+              .toLowerCase()
+              .includes(query) ||
+            booking.phone
+              .toLowerCase()
+              .includes(query) ||
+            booking.service_name
+              .toLowerCase()
+              .includes(query) ||
+            (
+              booking.location || ""
+            )
+              .toLowerCase()
+              .includes(query);
+
+          const matchesStatus =
+            statusFilter === "all" ||
+            booking.status ===
+              statusFilter;
+
+          return (
+            matchesSearch &&
+            matchesStatus
+          );
+        }
+      );
+    }, [
+      bookings,
+      search,
+      statusFilter,
+    ]);
+
   return (
     <div className="bookings-admin">
 
-      <div className="bookings-header">
-        <div>
+      {/* HEADER */}
+
+      <header className="bookings-header">
+
+        <div className="bookings-heading">
+
           <p className="bookings-label">
-            WUREYES BOOKINGS
+            WUREYES / CLIENT MANAGEMENT
           </p>
 
-          <h2>
-            Client Bookings
-          </h2>
+          <h1>
+            Bookings
+          </h1>
+
+          <p className="bookings-description">
+            Manage client bookings,
+            photo selections and
+            project workflow.
+          </p>
+
         </div>
 
         <button
+          type="button"
           className="bookings-refresh"
           onClick={loadBookings}
+          disabled={loading}
         >
-          Refresh
+          <span>
+            ↻
+          </span>
+
+          {loading
+            ? "Refreshing..."
+            : "Refresh"}
         </button>
-      </div>
+
+      </header>
+
+
+      {/* ERROR */}
 
       {error && (
         <div className="bookings-error">
-          {error}
+          <span>!</span>
+          <p>{error}</p>
         </div>
       )}
 
+
+      {/* STATISTICS */}
+
+      {!loading && (
+        <section className="booking-statistics">
+
+          <div className="booking-stat-card">
+
+            <span className="booking-stat-label">
+              TOTAL BOOKINGS
+            </span>
+
+            <strong>
+              {statistics.total}
+            </strong>
+
+            <small>
+              All client requests
+            </small>
+
+          </div>
+
+
+          <div className="booking-stat-card">
+
+            <span className="booking-stat-label">
+              PENDING
+            </span>
+
+            <strong>
+              {statistics.pending}
+            </strong>
+
+            <small>
+              Waiting for confirmation
+            </small>
+
+          </div>
+
+
+          <div className="booking-stat-card">
+
+            <span className="booking-stat-label">
+              CONFIRMED
+            </span>
+
+            <strong>
+              {statistics.confirmed}
+            </strong>
+
+            <small>
+              Active projects
+            </small>
+
+          </div>
+
+
+          <div className="booking-stat-card">
+
+            <span className="booking-stat-label">
+              COMPLETED
+            </span>
+
+            <strong>
+              {statistics.completed}
+            </strong>
+
+            <small>
+              Finished projects
+            </small>
+
+          </div>
+
+        </section>
+      )}
+
+
+      {/* SEARCH / FILTER */}
+
+      {!loading &&
+        bookings.length > 0 && (
+          <section className="bookings-toolbar">
+
+            <div className="booking-search">
+
+              <span>
+                ⌕
+              </span>
+
+              <input
+                type="text"
+                placeholder="Search client, email, service..."
+                value={search}
+                onChange={(event) =>
+                  setSearch(
+                    event.target.value
+                  )
+                }
+              />
+
+              {search && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSearch("")
+                  }
+                >
+                  ×
+                </button>
+              )}
+
+            </div>
+
+
+            <div className="booking-filter">
+
+              <span>
+                STATUS
+              </span>
+
+              <select
+                value={statusFilter}
+                onChange={(event) =>
+                  setStatusFilter(
+                    event.target
+                      .value as
+                      | "all"
+                      | Booking["status"]
+                  )
+                }
+              >
+
+                <option value="all">
+                  All bookings
+                </option>
+
+                <option value="pending">
+                  Pending
+                </option>
+
+                <option value="confirmed">
+                  Confirmed
+                </option>
+
+                <option value="completed">
+                  Completed
+                </option>
+
+                <option value="cancelled">
+                  Cancelled
+                </option>
+
+              </select>
+
+            </div>
+
+          </section>
+        )}
+
+
+      {/* RESULT INFO */}
+
+      {!loading &&
+        bookings.length > 0 && (
+          <div className="bookings-result-info">
+
+            <span>
+              Showing{" "}
+              <strong>
+                {filteredBookings.length}
+              </strong>{" "}
+              of{" "}
+              <strong>
+                {bookings.length}
+              </strong>{" "}
+              bookings
+            </span>
+
+          </div>
+        )}
+
+
+      {/* CONTENT */}
+
       {loading ? (
+
         <div className="bookings-loading">
-          Loading bookings...
-        </div>
-      ) : bookings.length === 0 ? (
-        <div className="bookings-empty">
+
+          <div className="loading-spinner" />
+
           <strong>
-            No bookings yet.
+            Loading bookings
+          </strong>
+
+          <span>
+            Please wait...
+          </span>
+
+        </div>
+
+      ) : bookings.length === 0 ? (
+
+        <div className="bookings-empty">
+
+          <div className="empty-icon">
+            ◇
+          </div>
+
+          <strong>
+            No bookings yet
           </strong>
 
           <p>
-            New bookings submitted from the
-            website will appear here.
+            New bookings submitted
+            from the website will
+            appear here.
           </p>
+
         </div>
+
+      ) : filteredBookings.length === 0 ? (
+
+        <div className="bookings-empty">
+
+          <div className="empty-icon">
+            ⌕
+          </div>
+
+          <strong>
+            No matching bookings
+          </strong>
+
+          <p>
+            Try another search
+            keyword or status filter.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setStatusFilter("all");
+            }}
+          >
+            Clear filters
+          </button>
+
+        </div>
+
       ) : (
+
         <div className="bookings-grid">
 
-          {bookings.map((booking) => (
+          {filteredBookings.map(
+            (booking) => {
 
-            <article
-              className="booking-card"
-              key={booking.id}
+              const selectionUrl =
+                getSelectionUrl(
+                  booking
+                );
+
+              return (
+                <article
+                  className="booking-card"
+                  key={booking.id}
+                >
+
+                  {/* CARD HEADER */}
+
+                  <div className="booking-card-top">
+
+                    <div className="booking-client-heading">
+
+                      <span className="booking-id">
+                        BOOKING #
+                        {String(
+                          booking.id
+                        ).padStart(
+                          3,
+                          "0"
+                        )}
+                      </span>
+
+                      <h2>
+                        {booking.client_name}
+                      </h2>
+
+                      <p>
+                        {booking.service_name}
+                      </p>
+
+                    </div>
+
+                    <span
+                      className={`booking-status ${booking.status}`}
+                    >
+                      <i />
+                      {booking.status}
+                    </span>
+
+                  </div>
+
+
+                  {/* SERVICE */}
+
+                  <div className="booking-service">
+
+                    <div className="booking-service-main">
+
+                      <span>
+                        SERVICE
+                      </span>
+
+                      <strong>
+                        {booking.service_name}
+                      </strong>
+
+                    </div>
+
+                    <div className="booking-price">
+
+                      <span>
+                        PROJECT VALUE
+                      </span>
+
+                      <strong>
+                        {formatPrice(
+                          booking.service_price
+                        )}
+                      </strong>
+
+                    </div>
+
+                  </div>
+
+
+                  {/* DETAILS */}
+
+                  <div className="booking-details">
+
+                    <div className="booking-detail">
+
+                      <span>
+                        EVENT DATE
+                      </span>
+
+                      <strong>
+                        {formatDate(
+                          booking.event_date
+                        )}
+                      </strong>
+
+                    </div>
+
+
+                    <div className="booking-detail">
+
+                      <span>
+                        LOCATION
+                      </span>
+
+                      <strong>
+                        {booking.location ||
+                          "Not specified"}
+                      </strong>
+
+                    </div>
+
+
+                    <div className="booking-detail">
+
+                      <span>
+                        EMAIL
+                      </span>
+
+                      <strong>
+                        {booking.email}
+                      </strong>
+
+                    </div>
+
+
+                    <div className="booking-detail">
+
+                      <span>
+                        PHONE
+                      </span>
+
+                      <strong>
+                        {booking.phone}
+                      </strong>
+
+                    </div>
+
+                  </div>
+
+
+                  {/* MESSAGE */}
+
+                  {booking.message && (
+                    <div className="booking-message">
+
+                      <span>
+                        CLIENT MESSAGE
+                      </span>
+
+                      <p>
+                        {booking.message}
+                      </p>
+
+                    </div>
+                  )}
+
+
+                  {/* PHOTO WORKFLOW */}
+
+                  <section className="booking-workflow">
+
+                    <div className="workflow-heading">
+
+                      <div>
+
+                        <span>
+                          PHOTO WORKFLOW
+                        </span>
+
+                        <strong>
+                          Google Drive
+                        </strong>
+
+                      </div>
+
+                      {booking.drive_folder_url && (
+                        <span className="workflow-connected">
+                          ● Connected
+                        </span>
+                      )}
+
+                    </div>
+
+
+                    <div className="drive-input-row">
+
+                      <input
+                        type="url"
+                        placeholder="Paste Google Drive folder URL..."
+                        value={
+                          driveUrls[
+                            booking.id
+                          ] || ""
+                        }
+                        onChange={(event) =>
+                          setDriveUrls(
+                            (current) => ({
+                              ...current,
+                              [booking.id]:
+                                event.target
+                                  .value,
+                            })
+                          )
+                        }
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          saveDriveFolder(
+                            booking.id
+                          )
+                        }
+                        disabled={
+                          savingDrive ===
+                          booking.id
+                        }
+                      >
+                        {savingDrive ===
+                        booking.id
+                          ? "Saving..."
+                          : "Save"}
+                      </button>
+
+                    </div>
+
+
+                    {selectionUrl && (
+                      <div className="selection-link-box">
+
+                        <div className="selection-link-header">
+
+                          <div>
+
+                            <span>
+                              CLIENT SELECTION LINK
+                            </span>
+
+                            <strong>
+                              Ready to share
+                            </strong>
+
+                          </div>
+
+                          <div className="selection-link-status">
+                            LIVE
+                          </div>
+
+                        </div>
+
+
+                        <input
+                          type="text"
+                          readOnly
+                          value={
+                            selectionUrl
+                          }
+                        />
+
+
+                        <div className="selection-link-actions">
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openSelectionLink(
+                                booking
+                              )
+                            }
+                          >
+                            Open Link
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              copySelectionLink(
+                                booking
+                              )
+                            }
+                          >
+                            Copy Link
+                          </button>
+
+                        </div>
+
+                      </div>
+                    )}
+
+                  </section>
+
+
+                  {/* SELECTION RESULT */}
+
+                  <div className="booking-selection-result">
+
+                    <div>
+
+                      <span>
+                        CLIENT SELECTION
+                      </span>
+
+                      <strong>
+                        Photo selections
+                      </strong>
+
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        loadSelections(
+                          booking.id
+                        )
+                      }
+                      disabled={
+                        loadingSelections &&
+                        selectedBooking ===
+                          booking.id
+                      }
+                    >
+                      {loadingSelections &&
+                      selectedBooking ===
+                        booking.id
+                        ? "Loading..."
+                        : "View Selection"}
+                    </button>
+
+                  </div>
+
+
+                  {/* FOOTER */}
+
+                  <div className="booking-footer">
+
+                    <div className="booking-created">
+
+                      <span>
+                        SUBMITTED
+                      </span>
+
+                      <small>
+                        {formatCreatedAt(
+                          booking.created_at
+                        )}
+                      </small>
+
+                    </div>
+
+
+                    <div className="booking-status-control">
+
+                      <span>
+                        STATUS
+                      </span>
+
+                      <select
+                        value={
+                          booking.status
+                        }
+                        onChange={(event) =>
+                          updateStatus(
+                            booking.id,
+                            event.target
+                              .value as Booking["status"]
+                          )
+                        }
+                      >
+
+                        <option value="pending">
+                          Pending
+                        </option>
+
+                        <option value="confirmed">
+                          Confirmed
+                        </option>
+
+                        <option value="completed">
+                          Completed
+                        </option>
+
+                        <option value="cancelled">
+                          Cancelled
+                        </option>
+
+                      </select>
+
+                    </div>
+
+                  </div>
+
+                </article>
+              );
+            }
+          )}
+
+        </div>
+      )}
+
+
+      {/* PHOTO SELECTION MODAL */}
+
+      {selectedBooking !== null &&
+        selectionData && (
+
+          <div
+            className="selection-modal-overlay"
+            onClick={closeSelections}
+          >
+
+            <div
+              className="selection-modal"
+              onClick={(event) =>
+                event.stopPropagation()
+              }
             >
 
-              <div className="booking-card-top">
+              <div className="selection-modal-header">
 
                 <div>
-                  <span className="booking-id">
-                    BOOKING #{booking.id}
+
+                  <span>
+                    PHOTO SELECTION
                   </span>
 
-                  <h3>
-                    {booking.client_name}
-                  </h3>
+                  <h2>
+                    {
+                      selectionData
+                        .booking
+                        .client_name
+                    }
+                  </h2>
+
+                  <p>
+                    {
+                      selectionData
+                        .total_selected
+                    }{" "}
+                    foto dipilih
+                  </p>
+
                 </div>
 
-                <span
-                  className={`booking-status ${booking.status}`}
+                <button
+                  type="button"
+                  onClick={
+                    closeSelections
+                  }
                 >
-                  {booking.status}
-                </span>
+                  ×
+                </button>
 
               </div>
 
 
-              <div className="booking-service">
-
-                <span>
-                  SERVICE
-                </span>
-
-                <strong>
-                  {booking.service_name}
-                </strong>
-
-                <small>
-                  {formatPrice(
-                    booking.service_price
-                  )}
-                </small>
-
-              </div>
-
-
-              <div className="booking-details">
-
-                <div>
-                  <span>
-                    EVENT DATE
-                  </span>
-
-                  <strong>
-                    {formatDate(
-                      booking.event_date
-                    )}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>
-                    LOCATION
-                  </span>
-
-                  <strong>
-                    {booking.location || "-"}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>
-                    EMAIL
-                  </span>
-
-                  <strong>
-                    {booking.email}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>
-                    PHONE
-                  </span>
-
-                  <strong>
-                    {booking.phone}
-                  </strong>
-                </div>
-
-              </div>
-
-
-              {booking.message && (
-                <div className="booking-message">
+              {selectionData.note && (
+                <div className="selection-note">
 
                   <span>
-                    CLIENT MESSAGE
+                    CATATAN EDITING
                   </span>
 
                   <p>
-                    {booking.message}
+                    {
+                      selectionData.note
+                    }
                   </p>
 
                 </div>
               )}
 
 
-              <div className="booking-footer">
+              {selectionData
+                .selections
+                .length === 0 ? (
 
-                <small>
-                  Submitted{" "}
-                  {formatCreatedAt(
-                    booking.created_at
-                  )}
-                </small>
+                <div className="selection-empty">
 
-                <select
-                  value={booking.status}
-                  onChange={(event) =>
-                    updateStatus(
-                      booking.id,
-                      event.target.value as Booking["status"]
+                  <strong>
+                    Belum ada foto dipilih.
+                  </strong>
+
+                  <p>
+                    Client belum mengirim
+                    pilihan foto.
+                  </p>
+
+                </div>
+
+              ) : (
+
+                <div className="selection-photo-grid">
+
+                  {selectionData.selections.map(
+                    (photo) => (
+
+                      <a
+                        key={photo.id}
+                        href={
+                          photo.file_url ||
+                          "#"
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="selection-photo"
+                      >
+
+                        <div className="selection-photo-image">
+
+                          <img
+                            src={`${API_URL}/api/google-drive/thumbnail/${photo.file_id}`}
+                            alt={
+                              photo.file_name
+                            }
+                            loading="lazy"
+                            onError={() =>
+                              console.error(
+                                "Thumbnail proxy gagal:",
+                                photo.file_name
+                              )
+                            }
+                          />
+
+                        </div>
+
+                        <span>
+                          {photo.file_name}
+                        </span>
+
+                      </a>
+
                     )
+                  )}
+
+                </div>
+
+              )}
+
+
+              <div className="selection-modal-footer">
+
+                <button
+                  type="button"
+                  onClick={
+                    closeSelections
                   }
                 >
-                  <option value="pending">
-                    Pending
-                  </option>
-
-                  <option value="confirmed">
-                    Confirmed
-                  </option>
-
-                  <option value="completed">
-                    Completed
-                  </option>
-
-                  <option value="cancelled">
-                    Cancelled
-                  </option>
-                </select>
+                  Tutup
+                </button>
 
               </div>
 
-            </article>
+            </div>
 
-          ))}
-
-        </div>
-      )}
+          </div>
+        )}
 
     </div>
   );

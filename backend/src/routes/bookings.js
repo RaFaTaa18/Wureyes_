@@ -28,8 +28,10 @@ router.get(
           b.message,
           b.status,
           b.created_at,
+          b.drive_folder_url,
+          b.selection_token,
           s.name AS service_name,
-          s.price AS service_price
+          s.price AS service_price  
         FROM bookings b
         INNER JOIN services s
           ON b.service_id = s.id

@@ -15,6 +15,7 @@ import Contact from "./sections/Contact";
 
 import AdminLogin from "./admin/AdminLogin";
 import AdminDashboard from "./admin/AdminDashboard";
+import PhotoSelection from "./client/PhotoSelection";
 
 import "./App.css";
 
@@ -49,6 +50,11 @@ function App() {
         <Route
           path="/admin"
           element={<AdminDashboard />}
+        />
+
+        <Route
+           path="/select/:token"
+           element={<PhotoSelection />}
         />
       </Routes>
     </BrowserRouter>
