@@ -125,7 +125,7 @@ export default function Booking() {
         );
       }
 
-            const selectedService = services.find(
+      const selectedService = services.find(
         (service) => service.id === Number(form.service_id)
       );
 
