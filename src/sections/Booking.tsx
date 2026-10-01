@@ -25,6 +25,7 @@ export default function Booking() {
   const [services, setServices] = useState<Service[]>([]);
   const [loadingServices, setLoadingServices] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const [form, setForm] = useState<BookingForm>({
     client_name: "",
@@ -87,6 +88,16 @@ export default function Booking() {
       return;
     }
 
+    if (!termsAccepted) {
+  setStatus({
+    type: "error",
+    message:
+      "Please agree to the Terms & Conditions before submitting your booking.",
+  });
+
+  return;
+}
+
     setSubmitting(true);
 
     try {
@@ -127,6 +138,8 @@ export default function Booking() {
         location: "",
         message: "",
       });
+
+      setTermsAccepted(false);
     } catch (error) {
       console.error("Booking error:", error);
 
@@ -299,6 +312,32 @@ export default function Booking() {
               onChange={handleChange}
             />
           </div>
+
+          <div className="booking-terms">
+  <label className="booking-terms-label">
+    <input
+      type="checkbox"
+      checked={termsAccepted}
+      onChange={(event) =>
+        setTermsAccepted(event.target.checked)
+      }
+    />
+
+    <span className="booking-terms-check"></span>
+
+    <span className="booking-terms-text">
+      I have read and agree to the{" "}
+      <a
+        href="/terms"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Terms & Conditions
+      </a>
+      {" "}of Wureyes.
+    </span>
+  </label>
+</div>
 
           {status.message && (
             <div
