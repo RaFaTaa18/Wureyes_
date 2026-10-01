@@ -10,7 +10,7 @@ interface ContactForm {
   subject: string;
   message: string;
 }
-
+const API_URL = import.meta.env.VITE_API_URL || "";
 export default function Contact() {
   const [form, setForm] = useState<ContactForm>({
     name: "",
@@ -51,7 +51,7 @@ export default function Contact() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/messages",
+        `${API_URL}/api/messages`,
         {
           method: "POST",
           headers: {

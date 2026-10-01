@@ -13,9 +13,10 @@ interface Service {
 export default function Services() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const API_URL = import.meta.env.VITE_API_URL || "";
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/services")
+    fetch(`${API_URL}/api/services`)
       .then((response) => response.json())
       .then((result) => {
         if (result.success) {

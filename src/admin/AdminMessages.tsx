@@ -15,6 +15,7 @@ export default function AdminMessages() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const API_URL = import.meta.env.VITE_API_URL || "";
 
   const token = sessionStorage.getItem("wureyes_token");
 
@@ -30,7 +31,7 @@ export default function AdminMessages() {
       setError("");
 
       const response = await fetch(
-        "http://localhost:5000/api/messages",
+        `${API_URL}/api/messages`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -83,7 +84,7 @@ export default function AdminMessages() {
       setError("");
 
       const response = await fetch(
-        `http://localhost:5000/api/messages/${id}/status`,
+        `${API_URL}/api/messages/${id}/status`,
         {
           method: "PATCH",
           headers: {
