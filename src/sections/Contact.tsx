@@ -132,6 +132,13 @@ export default function Contact() {
                 @wureyes_
               </a>
             </div>
+
+            <div> <span>TIKTOK</span>
+            <a href="https://www.tiktok.com/@wureyes_" 
+              target="_blank" 
+              rel="noreferrer" 
+              >
+                 @wureyes_ </a> </div>
           </div>
         </div>
 
