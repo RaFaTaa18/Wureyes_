@@ -13,9 +13,10 @@ interface Testimonial {
 export default function About() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [loading, setLoading] = useState(true);
+  const API_URL = import.meta.env.VITE_API_URL || "";
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/testimonials")
+    fetch(`${API_URL}/api/testimonials`)
       .then((response) => response.json())
       .then((result) => {
         if (result.success) {

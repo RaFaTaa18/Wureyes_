@@ -38,6 +38,7 @@ export default function AdminServices() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const API_URL = import.meta.env.VITE_API_URL || "";
 
   const token = sessionStorage.getItem("wureyes_token");
 
@@ -47,7 +48,7 @@ export default function AdminServices() {
       setError("");
 
       const response = await fetch(
-        "http://localhost:5000/api/services"
+        `${API_URL}/api/services`
       );
 
       const result = await response.json();
@@ -146,8 +147,8 @@ export default function AdminServices() {
 
       const url =
         editingId !== null
-          ? `http://localhost:5000/api/services/${editingId}`
-          : "http://localhost:5000/api/services";
+          ? `${API_URL}/api/services/${editingId}`
+          : `${API_URL}/api/services`;
 
       const method =
         editingId !== null ? "PUT" : "POST";
@@ -210,7 +211,7 @@ export default function AdminServices() {
       setError("");
 
       const response = await fetch(
-        `http://localhost:5000/api/services/${id}`,
+        `${API_URL}/api/services/${id}`,
         {
           method: "DELETE",
           headers: {

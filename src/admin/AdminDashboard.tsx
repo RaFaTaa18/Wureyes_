@@ -24,6 +24,8 @@ interface User {
 }
 
 export default function AdminDashboard() {
+  const API_URL = import.meta.env.VITE_API_URL || "";
+
   const navigate = useNavigate();
 
   const [activePage, setActivePage] =
@@ -57,7 +59,7 @@ export default function AdminDashboard() {
     async function loadDashboard() {
       try {
         const response = await fetch(
-          "http://localhost:5000/api/dashboard/stats",
+          `${API_URL}/api/dashboard/stats`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
