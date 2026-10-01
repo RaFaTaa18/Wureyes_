@@ -140,6 +140,8 @@ Tanggal Event: ${form.event_date}
 Lokasi: ${form.location || "-"}
 Detail Project: ${form.message || "-"}
 
+Mohon konfirmasi, apakah untuk tanggal ${form.event_date} tersebut masih available untuk booking?
+
 Terima kasih.`;
 
       const whatsappUrl = `https://wa.me/6282183378241?text=${encodeURIComponent(
