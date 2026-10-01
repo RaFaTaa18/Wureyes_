@@ -21,6 +21,8 @@ interface BookingForm {
   message: string;
 }
 
+const API_URL = import.meta.env.VITE_API_URL || "";
+
 export default function Booking() {
   const [services, setServices] = useState<Service[]>([]);
   const [loadingServices, setLoadingServices] = useState(true);
@@ -43,7 +45,7 @@ export default function Booking() {
   });
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/services")
+    fetch(`${API_URL}/api/bookings`)
       .then((response) => response.json())
       .then((result) => {
         if (result.success) {
@@ -102,7 +104,7 @@ export default function Booking() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/bookings",
+        `${API_URL}/api/services`,
         {
           method: "POST",
           headers: {
