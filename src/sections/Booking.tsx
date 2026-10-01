@@ -45,7 +45,7 @@ export default function Booking() {
   });
 
   useEffect(() => {
-    fetch(`${API_URL}/api/bookings`)
+  fetch(`${API_URL}/api/services`)
       .then((response) => response.json())
       .then((result) => {
         if (result.success) {
@@ -104,7 +104,7 @@ export default function Booking() {
 
     try {
       const response = await fetch(
-        `${API_URL}/api/services`,
+  `${API_URL}/api/bookings`,
         {
           method: "POST",
           headers: {
