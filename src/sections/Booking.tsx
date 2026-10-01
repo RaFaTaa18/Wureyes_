@@ -125,23 +125,28 @@ export default function Booking() {
         );
       }
 
-      setStatus({
-        type: "success",
-        message:
-          "Your booking request has been submitted successfully. We will contact you soon.",
-      });
+      const selectedService = services.find(
+        (service) => service.id === Number(form.service_id)
+      );
 
-      setForm({
-        client_name: "",
-        email: "",
-        phone: "",
-        service_id: "",
-        event_date: "",
-        location: "",
-        message: "",
-      });
+      const whatsappMessage = `Halo Wureyes, saya ingin mengonfirmasi booking saya.
 
-      setTermsAccepted(false);
+*Booking Details*
+Nama: ${form.client_name}
+Email: ${form.email}
+WhatsApp: ${form.phone}
+Service: ${selectedService?.name || "-"}
+Tanggal Event: ${form.event_date}
+Lokasi: ${form.location || "-"}
+Detail Project: ${form.message || "-"}
+
+Terima kasih.`;
+
+      const whatsappUrl = `https://wa.me/6282183378241?text=${encodeURIComponent(
+        whatsappMessage
+      )}`;
+
+      window.location.href = whatsappUrl;
     } catch (error) {
       console.error("Booking error:", error);
 
