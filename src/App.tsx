@@ -16,6 +16,8 @@ import Contact from "./sections/Contact";
 import AdminLogin from "./admin/AdminLogin";
 import AdminDashboard from "./admin/AdminDashboard";
 import PhotoSelection from "./client/PhotoSelection";
+import Terms from "./client/Terms";
+import Footer from "./components/Footer";
 
 import "./App.css";
 
@@ -32,6 +34,8 @@ function Website() {
         <About />
         <Contact />
       </main>
+
+      <Footer />
     </>
   );
 }
@@ -41,6 +45,10 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Website />} />
+<Route
+  path="/terms"
+  element={<Terms />}
+/>
 
         <Route
           path="/admin/login"

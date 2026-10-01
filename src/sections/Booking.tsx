@@ -21,10 +21,13 @@ interface BookingForm {
   message: string;
 }
 
+const API_URL = import.meta.env.VITE_API_URL || "";
+
 export default function Booking() {
   const [services, setServices] = useState<Service[]>([]);
   const [loadingServices, setLoadingServices] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const [form, setForm] = useState<BookingForm>({
     client_name: "",
@@ -42,7 +45,7 @@ export default function Booking() {
   });
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/services")
+  fetch(`${API_URL}/api/services`)
       .then((response) => response.json())
       .then((result) => {
         if (result.success) {
@@ -87,11 +90,21 @@ export default function Booking() {
       return;
     }
 
+    if (!termsAccepted) {
+  setStatus({
+    type: "error",
+    message:
+      "Please agree to the Terms & Conditions before submitting your booking.",
+  });
+
+  return;
+}
+
     setSubmitting(true);
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/bookings",
+  `${API_URL}/api/bookings`,
         {
           method: "POST",
           headers: {
@@ -127,6 +140,8 @@ export default function Booking() {
         location: "",
         message: "",
       });
+
+      setTermsAccepted(false);
     } catch (error) {
       console.error("Booking error:", error);
 
@@ -299,6 +314,32 @@ export default function Booking() {
               onChange={handleChange}
             />
           </div>
+
+          <div className="booking-terms">
+  <label className="booking-terms-label">
+    <input
+      type="checkbox"
+      checked={termsAccepted}
+      onChange={(event) =>
+        setTermsAccepted(event.target.checked)
+      }
+    />
+
+    <span className="booking-terms-check"></span>
+
+    <span className="booking-terms-text">
+      I have read and agree to the{" "}
+      <a
+        href="/terms"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Terms & Conditions
+      </a>
+      {" "}of Wureyes.
+    </span>
+  </label>
+</div>
 
           {status.message && (
             <div

@@ -168,6 +168,82 @@
   color: #8a2929;
 }
 
+
+.booking-terms {
+  margin: 5px 0 25px;
+}
+
+.booking-terms-label {
+  position: relative;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  cursor: pointer;
+
+  font-size: 0.78rem;
+  line-height: 1.6;
+
+  color: rgba(17, 17, 17, 0.58);
+}
+
+.booking-terms-label input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.booking-terms-check {
+  flex: 0 0 17px;
+
+  width: 17px;
+  height: 17px;
+
+  margin-top: 2px;
+
+  border: 1px solid rgba(17, 17, 17, 0.35);
+
+  background: transparent;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.booking-terms-label input:checked + .booking-terms-check {
+  background: #111111;
+  border-color: #111111;
+}
+
+.booking-terms-label input:checked + .booking-terms-check::after {
+  content: "";
+
+  display: block;
+
+  width: 4px;
+  height: 8px;
+
+  margin: 2px 0 0 5px;
+
+  border: solid #ffffff;
+  border-width: 0 1.5px 1.5px 0;
+
+  transform: rotate(45deg);
+}
+
+.booking-terms-text a {
+  color: #111111;
+  font-weight: 600;
+
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.booking-terms-text a:hover {
+  opacity: 0.55;
+}
+
 .booking-submit {
   width: 100%;
 

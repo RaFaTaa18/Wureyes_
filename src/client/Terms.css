@@ -1,0 +1,270 @@
+.terms-page {
+  min-height: 100vh;
+  background: #f5f4f0;
+  color: #171717;
+  font-family: inherit;
+}
+
+.terms-hero {
+  min-height: 68vh;
+  padding: 32px 6vw 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(23, 23, 23, 0.15);
+}
+
+.terms-back {
+  width: fit-content;
+  color: #171717;
+  text-decoration: none;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  transition: opacity 0.25s ease;
+}
+
+.terms-back:hover {
+  opacity: 0.55;
+}
+
+.terms-hero-content {
+  max-width: 1100px;
+}
+
+.terms-eyebrow {
+  margin: 0 0 24px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.terms-hero h1 {
+  margin: 0;
+  font-size: clamp(64px, 11vw, 160px);
+  line-height: 0.86;
+  letter-spacing: -0.065em;
+  font-weight: 500;
+}
+
+.terms-hero h1 span {
+  opacity: 0.42;
+}
+
+.terms-intro {
+  max-width: 420px;
+  margin: 42px 0 0;
+  font-size: 16px;
+  line-height: 1.7;
+  opacity: 0.65;
+}
+
+.terms-content {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 120px 6vw;
+  display: grid;
+  grid-template-columns: minmax(250px, 0.8fr) minmax(0, 1.5fr);
+  gap: 100px;
+}
+
+.terms-heading {
+  position: sticky;
+  top: 40px;
+  align-self: start;
+}
+
+.terms-heading > p:first-child {
+  margin: 0 0 24px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  opacity: 0.5;
+}
+
+.terms-heading h2 {
+  margin: 0;
+  font-size: clamp(38px, 4vw, 64px);
+  line-height: 0.95;
+  letter-spacing: -0.045em;
+  font-weight: 500;
+}
+
+.terms-heading > p:last-child {
+  max-width: 330px;
+  margin: 32px 0 0;
+  font-size: 14px;
+  line-height: 1.75;
+  opacity: 0.6;
+}
+
+.terms-list {
+  border-top: 1px solid rgba(23, 23, 23, 0.18);
+}
+
+.terms-item {
+  border-bottom: 1px solid rgba(23, 23, 23, 0.18);
+}
+
+.terms-trigger {
+  width: 100%;
+  padding: 27px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  display: grid;
+  grid-template-columns: 60px 1fr 30px;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.terms-number {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  opacity: 0.4;
+}
+
+.terms-title {
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+
+.terms-icon {
+  justify-self: end;
+  font-size: 24px;
+  font-weight: 300;
+  opacity: 0.65;
+}
+
+.terms-answer {
+  padding: 0 60px 30px;
+  animation: termsReveal 0.25s ease;
+}
+
+.terms-answer p {
+  max-width: 680px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.85;
+  opacity: 0.65;
+}
+
+.terms-item.is-open .terms-title {
+  opacity: 0.6;
+}
+
+@keyframes termsReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.terms-agreement {
+  padding: 140px 6vw;
+  background: #171717;
+  color: #f5f4f0;
+  text-align: center;
+}
+
+.terms-agreement .terms-eyebrow {
+  opacity: 0.45;
+}
+
+.terms-agreement h2 {
+  margin: 0 auto 48px;
+  max-width: 900px;
+  font-size: clamp(40px, 6vw, 84px);
+  line-height: 0.95;
+  letter-spacing: -0.055em;
+  font-weight: 500;
+}
+
+.terms-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 28px;
+  border: 1px solid rgba(245, 244, 240, 0.35);
+  color: #f5f4f0;
+  text-decoration: none;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition:
+    background 0.25s ease,
+    color 0.25s ease;
+}
+
+.terms-button:hover {
+  background: #f5f4f0;
+  color: #171717;
+}
+
+@media (max-width: 800px) {
+  .terms-hero {
+    min-height: 70vh;
+    padding: 24px 24px 60px;
+  }
+
+  .terms-hero h1 {
+    font-size: clamp(58px, 18vw, 100px);
+  }
+
+  .terms-intro {
+    margin-top: 30px;
+    font-size: 14px;
+  }
+
+  .terms-content {
+    padding: 80px 24px;
+    display: block;
+  }
+
+  .terms-heading {
+    position: static;
+    margin-bottom: 60px;
+  }
+
+  .terms-heading h2 {
+    font-size: 42px;
+  }
+
+  .terms-heading > p:last-child {
+    margin-top: 24px;
+  }
+
+  .terms-trigger {
+    grid-template-columns: 40px 1fr 25px;
+    padding: 23px 0;
+  }
+
+  .terms-title {
+    font-size: 16px;
+    padding-right: 15px;
+  }
+
+  .terms-answer {
+    padding: 0 40px 25px;
+  }
+
+  .terms-answer p {
+    font-size: 13px;
+  }
+
+  .terms-agreement {
+    padding: 100px 24px;
+  }
+
+  .terms-agreement h2 {
+    font-size: 42px;
+  }
+}
