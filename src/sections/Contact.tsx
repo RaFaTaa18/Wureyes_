@@ -129,16 +129,16 @@ export default function Contact() {
                 target="_blank"
                 rel="noreferrer"
               >
-                @wureyes_
+                @withureyes._
               </a>
             </div>
 
             <div> <span>TIKTOK</span>
-            <a href="https://www.tiktok.com/@wureyes_" 
+            <a href="https://www.tiktok.com/@withureyes._" 
               target="_blank" 
               rel="noreferrer" 
               >
-                 @wureyes_ </a> </div>
+                 @withureyes._ </a> </div>
           </div>
         </div>
 
