@@ -3,6 +3,7 @@ import "./AdminBookings.css";
 
 interface Booking {
   id: number;
+  service_id: number;
   client_name: string;
   email: string;
   phone: string;
@@ -24,6 +25,12 @@ interface Booking {
   drive_folder_url?: string | null;
   selection_token?: string | null;
   selected_photos?: number;
+}
+
+interface Service {
+  id: number;
+  name: string;
+  price: number;
 }
 
 interface Selection {
@@ -51,12 +58,29 @@ interface SelectionData {
   selections: Selection[];
 }
 
-const API_URL = "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function AdminBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [services, setServices] = useState<Service[]>([]);
+
+const [editingBooking, setEditingBooking] =
+  useState<Booking | null>(null);
+
+const [editForm, setEditForm] = useState({
+  client_name: "",
+  email: "",
+  phone: "",
+  service_id: "",
+  event_date: "",
+  location: "",
+  message: "",
+});
+
+const [savingEdit, setSavingEdit] = useState(false);
 
   const [driveUrls, setDriveUrls] =
     useState<Record<number, string>>({});
@@ -155,9 +179,143 @@ export default function AdminBookings() {
     }
   }
 
+  async function loadServices() {
+  try {
+    const response = await fetch(
+      `${API_URL}/api/services`
+    );
+
+    const result = await response.json();
+
+    if (result.success) {
+      setServices(result.data);
+    }
+  } catch (error) {
+    console.error(
+      "Failed to load services:",
+      error
+    );
+  }
+}
+
   useEffect(() => {
-    loadBookings();
-  }, []);
+  loadBookings();
+  loadServices();
+}, []);
+
+  function openEditBooking(booking: Booking) {
+  setEditingBooking(booking);
+
+  setEditForm({
+    client_name: booking.client_name || "",
+    email: booking.email || "",
+    phone: booking.phone || "",
+    service_id: String(
+      booking.service_id || ""
+    ),
+    event_date: booking.event_date
+      ? booking.event_date.substring(0, 10)
+      : "",
+    location: booking.location || "",
+    message: booking.message || "",
+  });
+}
+
+async function saveEditBooking() {
+  if (!editingBooking) {
+    return;
+  }
+
+  if (!token) {
+    setError(
+      "Session expired. Please login again."
+    );
+
+    return;
+  }
+
+  try {
+    setSavingEdit(true);
+    setError("");
+
+    const response = await fetch(
+      `${API_URL}/api/bookings/${editingBooking.id}`,
+      {
+        method: "PUT",
+
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+
+        body: JSON.stringify({
+          client_name:
+            editForm.client_name,
+          email: editForm.email,
+          phone: editForm.phone,
+          service_id: Number(
+            editForm.service_id
+          ),
+          event_date:
+            editForm.event_date,
+          location:
+            editForm.location,
+          message:
+            editForm.message,
+        }),
+      }
+    );
+
+    const result =
+      await response.json();
+
+    if (response.status === 401) {
+      sessionStorage.removeItem(
+        "wureyes_token"
+      );
+
+      sessionStorage.removeItem(
+        "wureyes_user"
+      );
+
+      window.location.href =
+        "/admin/login";
+
+      return;
+    }
+
+    if (
+      !response.ok ||
+      !result.success
+    ) {
+      throw new Error(
+        result.message ||
+          "Failed to update booking"
+      );
+    }
+
+    await loadBookings();
+
+    setEditingBooking(null);
+
+    alert(
+      "Booking berhasil diperbarui."
+    );
+  } catch (error) {
+    console.error(
+      "Update booking error:",
+      error
+    );
+
+    setError(
+      error instanceof Error
+        ? error.message
+        : "Failed to update booking"
+    );
+  } finally {
+    setSavingEdit(false);
+  }
+}
 
   async function updateStatus(
     id: number,
@@ -1226,6 +1384,16 @@ export default function AdminBookings() {
 
                     </div>
 
+                    <button
+  type="button"
+  className="booking-edit-button"
+  onClick={() =>
+    openEditBooking(booking)
+  }
+>
+  ✎ Edit
+</button>
+
 
                     <div className="booking-status-control">
 
@@ -1402,6 +1570,7 @@ export default function AdminBookings() {
 
                         </div>
 
+
                         <span>
                           {photo.file_name}
                         </span>
@@ -1433,7 +1602,194 @@ export default function AdminBookings() {
 
           </div>
         )}
+        
+{/* EDIT BOOKING MODAL */}
 
+{editingBooking && (
+  <div
+    className="edit-booking-overlay"
+    onClick={() =>
+      !savingEdit &&
+      setEditingBooking(null)
+    }
+  >
+    <div
+      className="edit-booking-modal"
+      onClick={(event) =>
+        event.stopPropagation()
+      }
+    >
+      <div className="edit-booking-header">
+        <div>
+          <h2>Edit Booking</h2>
+          <p>
+            Booking #{editingBooking.id}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="edit-booking-close"
+          onClick={() =>
+            !savingEdit &&
+            setEditingBooking(null)
+          }
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="edit-booking-form">
+        <div className="edit-form-grid">
+
+          <div className="edit-form-group">
+            <label>Nama Client</label>
+
+            <input
+              type="text"
+              value={editForm.client_name}
+              onChange={(e) =>
+                setEditForm({
+                  ...editForm,
+                  client_name: e.target.value,
+                })
+              }
+            />
+          </div>
+
+          <div className="edit-form-group">
+            <label>Email</label>
+
+            <input
+              type="email"
+              value={editForm.email}
+              onChange={(e) =>
+                setEditForm({
+                  ...editForm,
+                  email: e.target.value,
+                })
+              }
+            />
+          </div>
+
+          <div className="edit-form-group">
+            <label>No. Telepon</label>
+
+            <input
+              type="text"
+              value={editForm.phone}
+              onChange={(e) =>
+                setEditForm({
+                  ...editForm,
+                  phone: e.target.value,
+                })
+              }
+            />
+          </div>
+
+          <div className="edit-form-group">
+            <label>Service</label>
+
+            <select
+              value={editForm.service_id}
+              onChange={(e) =>
+                setEditForm({
+                  ...editForm,
+                  service_id: e.target.value,
+                })
+              }
+            >
+              <option value="">
+                Pilih Service
+              </option>
+
+              {services.map((service) => (
+                <option
+                  key={service.id}
+                  value={service.id}
+                >
+                  {service.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="edit-form-group">
+            <label>Tanggal Event</label>
+
+            <input
+              type="date"
+              value={editForm.event_date}
+              onChange={(e) =>
+                setEditForm({
+                  ...editForm,
+                  event_date: e.target.value,
+                })
+              }
+            />
+          </div>
+
+          <div className="edit-form-group">
+            <label>Lokasi</label>
+
+            <input
+              type="text"
+              value={editForm.location}
+              onChange={(e) =>
+                setEditForm({
+                  ...editForm,
+                  location: e.target.value,
+                })
+              }
+            />
+          </div>
+
+        </div>
+
+        <div className="edit-form-group">
+          <label>Pesan / Catatan</label>
+
+          <textarea
+            rows={5}
+            value={editForm.message}
+            onChange={(e) =>
+              setEditForm({
+                ...editForm,
+                message: e.target.value,
+              })
+            }
+          />
+        </div>
+      </div>
+
+      <div className="edit-booking-footer">
+
+        <button
+          type="button"
+          className="edit-cancel-button"
+          onClick={() =>
+            setEditingBooking(null)
+          }
+          disabled={savingEdit}
+        >
+          Batal
+        </button>
+
+        <button
+          type="button"
+          className="edit-save-button"
+          onClick={saveEditBooking}
+          disabled={savingEdit}
+        >
+          {savingEdit
+            ? "Menyimpan..."
+            : "Simpan Perubahan"}
+        </button>
+
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }

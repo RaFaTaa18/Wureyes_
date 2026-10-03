@@ -20,6 +20,7 @@ router.get(
       const [rows] = await pool.query(`
         SELECT
           b.id,
+          b.service_id,
           b.client_name,
           b.email,
           b.phone,
@@ -143,6 +144,136 @@ router.post("/", async (req, res) => {
   }
 });
 
+
+// =====================================================
+// UPDATE BOOKING - ADMIN ONLY
+// =====================================================
+
+router.put(
+  "/:id",
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const {
+        client_name,
+        email,
+        phone,
+        service_id,
+        event_date,
+        location,
+        message,
+      } = req.body;
+
+      // ===============================
+      // VALIDATION
+      // ===============================
+
+      if (
+        !client_name ||
+        !email ||
+        !phone ||
+        !service_id ||
+        !event_date
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "client_name, email, phone, service_id, and event_date are required",
+        });
+      }
+
+      // ===============================
+      // CHECK BOOKING
+      // ===============================
+
+      const [existingBooking] = await pool.query(
+        `
+        SELECT id
+        FROM bookings
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [id]
+      );
+
+      if (existingBooking.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Booking not found",
+        });
+      }
+
+      // ===============================
+      // CHECK SERVICE
+      // ===============================
+
+      const [services] = await pool.query(
+        `
+        SELECT id
+        FROM services
+        WHERE id = ?
+        AND is_active = TRUE
+        LIMIT 1
+        `,
+        [service_id]
+      );
+
+      if (services.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Service not found or inactive",
+        });
+      }
+
+      // ===============================
+      // UPDATE BOOKING
+      // ===============================
+
+      await pool.query(
+        `
+        UPDATE bookings
+        SET
+          client_name = ?,
+          email = ?,
+          phone = ?,
+          service_id = ?,
+          event_date = ?,
+          location = ?,
+          message = ?
+        WHERE id = ?
+        `,
+        [
+          client_name,
+          email,
+          phone,
+          service_id,
+          event_date,
+          location || null,
+          message || null,
+          id,
+        ]
+      );
+
+      res.json({
+        success: true,
+        message: "Booking updated successfully",
+      });
+    } catch (error) {
+      console.error(
+        "Update booking error:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+        message: "Failed to update booking",
+      });
+    }
+  }
+);
 
 // =====================================================
 // UPDATE BOOKING STATUS - ADMIN ONLY
