@@ -58,7 +58,8 @@ interface SelectionData {
   selections: Selection[];
 }
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || "";
+
 function normalizeWhatsAppNumber(phone: string) {
   const digits = phone.replace(/\D/g, "");
 
