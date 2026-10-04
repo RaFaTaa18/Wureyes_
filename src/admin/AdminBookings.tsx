@@ -3,6 +3,7 @@ import "./AdminBookings.css";
 
 interface Booking {
   id: number;
+  service_id: number;
   client_name: string;
   email: string;
   phone: string;
@@ -24,6 +25,12 @@ interface Booking {
   drive_folder_url?: string | null;
   selection_token?: string | null;
   selected_photos?: number;
+}
+
+interface Service {
+  id: number;
+  name: string;
+  price: number;
 }
 
 interface Selection {
@@ -53,10 +60,41 @@ interface SelectionData {
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
+function normalizeWhatsAppNumber(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+
+  if (digits.startsWith("62")) {
+    return digits;
+  }
+
+  if (digits.startsWith("0")) {
+    return `62${digits.slice(1)}`;
+  }
+
+  return digits;
+}
+
 export default function AdminBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [services, setServices] = useState<Service[]>([]);
+
+const [editingBooking, setEditingBooking] =
+  useState<Booking | null>(null);
+
+const [editForm, setEditForm] = useState({
+  client_name: "",
+  email: "",
+  phone: "",
+  service_id: "",
+  event_date: "",
+  location: "",
+  message: "",
+});
+
+const [savingEdit, setSavingEdit] = useState(false);
 
   const [driveUrls, setDriveUrls] =
     useState<Record<number, string>>({});
@@ -155,73 +193,288 @@ export default function AdminBookings() {
     }
   }
 
-  useEffect(() => {
-    loadBookings();
-  }, []);
+  async function loadServices() {
+  try {
+    const response = await fetch(
+      `${API_URL}/api/services`
+    );
 
-  async function updateStatus(
-    id: number,
-    status: Booking["status"]
-  ) {
-    if (!token) {
-      setError(
-        "Session expired. Please login again."
+    const result = await response.json();
+
+    if (result.success) {
+      setServices(result.data);
+    }
+  } catch (error) {
+    console.error(
+      "Failed to load services:",
+      error
+    );
+  }
+}
+
+  useEffect(() => {
+  loadBookings();
+  loadServices();
+}, []);
+
+  function openEditBooking(booking: Booking) {
+  setEditingBooking(booking);
+
+  setEditForm({
+    client_name: booking.client_name || "",
+    email: booking.email || "",
+    phone: booking.phone || "",
+    service_id: String(
+      booking.service_id || ""
+    ),
+    event_date: booking.event_date
+      ? booking.event_date.substring(0, 10)
+      : "",
+    location: booking.location || "",
+    message: booking.message || "",
+  });
+}
+
+async function saveEditBooking() {
+  if (!editingBooking) {
+    return;
+  }
+
+  if (!token) {
+    setError(
+      "Session expired. Please login again."
+    );
+
+    return;
+  }
+
+  try {
+    setSavingEdit(true);
+    setError("");
+
+    const response = await fetch(
+      `${API_URL}/api/bookings/${editingBooking.id}`,
+      {
+        method: "PUT",
+
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+
+        body: JSON.stringify({
+          client_name:
+            editForm.client_name,
+          email: editForm.email,
+          phone: editForm.phone,
+          service_id: Number(
+            editForm.service_id
+          ),
+          event_date:
+            editForm.event_date,
+          location:
+            editForm.location,
+          message:
+            editForm.message,
+        }),
+      }
+    );
+
+    const result =
+      await response.json();
+
+    if (response.status === 401) {
+      sessionStorage.removeItem(
+        "wureyes_token"
       );
+
+      sessionStorage.removeItem(
+        "wureyes_user"
+      );
+
+      window.location.href =
+        "/admin/login";
 
       return;
     }
 
-    try {
-      setError("");
-
-      const response = await fetch(
-        `${API_URL}/api/bookings/${id}/status`,
-        {
-          method: "PATCH",
-
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-
-          body: JSON.stringify({
-            status,
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (
-        !response.ok ||
-        !result.success
-      ) {
-        throw new Error(
-          result.message ||
-            "Failed to update booking"
-        );
-      }
-
-      setBookings(
-        (current) =>
-          current.map(
-            (booking) =>
-              booking.id === id
-                ? {
-                    ...booking,
-                    status,
-                  }
-                : booking
-          )
-      );
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to update booking"
+    if (
+      !response.ok ||
+      !result.success
+    ) {
+      throw new Error(
+        result.message ||
+          "Failed to update booking"
       );
     }
+
+    await loadBookings();
+
+    setEditingBooking(null);
+
+    alert(
+      "Booking berhasil diperbarui."
+    );
+  } catch (error) {
+    console.error(
+      "Update booking error:",
+      error
+    );
+
+    setError(
+      error instanceof Error
+        ? error.message
+        : "Failed to update booking"
+    );
+  } finally {
+    setSavingEdit(false);
   }
+}
+
+  async function updateStatus(
+  id: number,
+  status: Booking["status"]
+) {
+  console.log("UPDATE STATUS CALLED:", id, status);
+
+  if (!token) {
+    setError(
+      "Session expired. Please login again."
+    );
+
+    return;
+  }
+
+  const booking = bookings.find(
+    (item) => item.id === id
+  );
+
+  if (!booking) {
+    setError(
+      "Booking tidak ditemukan."
+    );
+
+    return;
+  }
+
+  const previousStatus = booking.status;
+
+  try {
+    setError("");
+
+    const response = await fetch(
+      `${API_URL}/api/bookings/${id}/status`,
+      {
+        method: "PATCH",
+
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+
+        body: JSON.stringify({
+          status,
+        }),
+      }
+    );
+
+    const result = await response.json();
+
+    if (
+      !response.ok ||
+      !result.success
+    ) {
+      throw new Error(
+        result.message ||
+          "Failed to update booking"
+      );
+    }
+
+    setBookings(
+      (current) =>
+        current.map(
+          (item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  status,
+                }
+              : item
+        )
+    );
+
+    /*
+     * ==================================================
+     * WHATSAPP - STATUS COMPLETED
+     * ==================================================
+     *
+     * Hanya dijalankan ketika status benar-benar
+     * berubah menjadi completed.
+     */
+    if (
+      status === "completed" &&
+      previousStatus !== "completed"
+    ) {
+      const phone =
+        normalizeWhatsAppNumber(
+          booking.phone
+        );
+
+      const driveUrl =
+        booking.drive_folder_url?.trim();
+
+      if (!phone) {
+        setError(
+          "Nomor WhatsApp klien tidak tersedia."
+        );
+
+        return;
+      }
+
+      if (!driveUrl) {
+        setError(
+          "Status berhasil menjadi Completed, tetapi Google Drive belum dihubungkan ke booking ini."
+        );
+
+        return;
+      }
+
+      const message = `Hi ${booking.client_name}! 👋
+
+Hasil foto kamu sudah selesai! ✨
+
+Terima kasih sudah mempercayakan momen spesial kamu kepada Wureyes. 📸
+
+Kamu bisa mengakses hasil foto yang sudah kami edit melalui link Google Drive berikut:
+
+${driveUrl}
+
+⚠️ Catatan:
+Link Google Drive ini hanya dapat diakses selama 1 minggu sejak link dikirim. Harap segera download semua file yang diperlukan sebelum masa akses berakhir ya. 🙏
+
+Semoga kamu suka dengan hasilnya! 🤍
+
+— Wureyes_`;
+
+      const whatsappUrl =
+        `https://wa.me/${phone}?text=${encodeURIComponent(
+          message
+        )}`;
+
+      window.open(
+        whatsappUrl,
+        "_blank",
+        "noopener,noreferrer"
+      );
+    }
+  } catch (error) {
+    setError(
+      error instanceof Error
+        ? error.message
+        : "Failed to update booking"
+    );
+  }
+}
 
   async function saveDriveFolder(
     bookingId: number
@@ -406,6 +659,66 @@ export default function AdminBookings() {
     setSelectedBooking(null);
     setSelectionData(null);
   }
+
+  function openWhatsApp(
+  booking: Booking
+) {
+  if (!booking.phone) {
+    setError(
+      "Nomor WhatsApp client belum tersedia."
+    );
+
+    return;
+  }
+
+  if (!booking.drive_folder_url) {
+    setError(
+      "Google Drive hasil edit belum terhubung ke booking ini."
+    );
+
+    return;
+  }
+
+  // Membersihkan nomor telepon
+  let phone = booking.phone.replace(
+    /\D/g,
+    ""
+  );
+
+  // 08xxxxxxxxxx → 628xxxxxxxxxx
+  if (phone.startsWith("0")) {
+    phone =
+      "62" + phone.substring(1);
+  }
+
+  const message = `Hi ${booking.client_name}! 👋
+
+Hasil foto kamu sudah selesai! ✨
+
+Terima kasih sudah mempercayakan momen spesial kamu kepada Wureyes. 📸
+
+Kamu bisa mengakses hasil foto yang sudah kami edit melalui link Google Drive berikut:
+
+${booking.drive_folder_url}
+
+⚠️ Catatan:
+Link Google Drive ini hanya dapat diakses selama 1 minggu sejak link dikirim. Harap segera download semua file yang diperlukan sebelum masa akses berakhir ya. 🙏
+
+Semoga kamu suka dengan hasilnya! 🤍
+
+— Wureyes_`;
+
+  const whatsappUrl =
+    `https://wa.me/${phone}?text=${encodeURIComponent(
+      message
+    )}`;
+
+  window.open(
+    whatsappUrl,
+    "_blank",
+    "noopener,noreferrer"
+  );
+}
 
   function getSelectionUrl(
     booking: Booking
@@ -1226,6 +1539,16 @@ export default function AdminBookings() {
 
                     </div>
 
+                    <button
+  type="button"
+  className="booking-edit-button"
+  onClick={() =>
+    openEditBooking(booking)
+  }
+>
+  ✎ Edit
+</button>
+
 
                     <div className="booking-status-control">
 
@@ -1402,6 +1725,7 @@ export default function AdminBookings() {
 
                         </div>
 
+
                         <span>
                           {photo.file_name}
                         </span>
@@ -1433,7 +1757,194 @@ export default function AdminBookings() {
 
           </div>
         )}
+        
+{/* EDIT BOOKING MODAL */}
 
+{editingBooking && (
+  <div
+    className="edit-booking-overlay"
+    onClick={() =>
+      !savingEdit &&
+      setEditingBooking(null)
+    }
+  >
+    <div
+      className="edit-booking-modal"
+      onClick={(event) =>
+        event.stopPropagation()
+      }
+    >
+      <div className="edit-booking-header">
+        <div>
+          <h2>Edit Booking</h2>
+          <p>
+            Booking #{editingBooking.id}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="edit-booking-close"
+          onClick={() =>
+            !savingEdit &&
+            setEditingBooking(null)
+          }
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="edit-booking-form">
+        <div className="edit-form-grid">
+
+          <div className="edit-form-group">
+            <label>Nama Client</label>
+
+            <input
+              type="text"
+              value={editForm.client_name}
+              onChange={(e) =>
+                setEditForm({
+                  ...editForm,
+                  client_name: e.target.value,
+                })
+              }
+            />
+          </div>
+
+          <div className="edit-form-group">
+            <label>Email</label>
+
+            <input
+              type="email"
+              value={editForm.email}
+              onChange={(e) =>
+                setEditForm({
+                  ...editForm,
+                  email: e.target.value,
+                })
+              }
+            />
+          </div>
+
+          <div className="edit-form-group">
+            <label>No. Telepon</label>
+
+            <input
+              type="text"
+              value={editForm.phone}
+              onChange={(e) =>
+                setEditForm({
+                  ...editForm,
+                  phone: e.target.value,
+                })
+              }
+            />
+          </div>
+
+          <div className="edit-form-group">
+            <label>Service</label>
+
+            <select
+              value={editForm.service_id}
+              onChange={(e) =>
+                setEditForm({
+                  ...editForm,
+                  service_id: e.target.value,
+                })
+              }
+            >
+              <option value="">
+                Pilih Service
+              </option>
+
+              {services.map((service) => (
+                <option
+                  key={service.id}
+                  value={service.id}
+                >
+                  {service.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="edit-form-group">
+            <label>Tanggal Event</label>
+
+            <input
+              type="date"
+              value={editForm.event_date}
+              onChange={(e) =>
+                setEditForm({
+                  ...editForm,
+                  event_date: e.target.value,
+                })
+              }
+            />
+          </div>
+
+          <div className="edit-form-group">
+            <label>Lokasi</label>
+
+            <input
+              type="text"
+              value={editForm.location}
+              onChange={(e) =>
+                setEditForm({
+                  ...editForm,
+                  location: e.target.value,
+                })
+              }
+            />
+          </div>
+
+        </div>
+
+        <div className="edit-form-group">
+          <label>Pesan / Catatan</label>
+
+          <textarea
+            rows={5}
+            value={editForm.message}
+            onChange={(e) =>
+              setEditForm({
+                ...editForm,
+                message: e.target.value,
+              })
+            }
+          />
+        </div>
+      </div>
+
+      <div className="edit-booking-footer">
+
+        <button
+          type="button"
+          className="edit-cancel-button"
+          onClick={() =>
+            setEditingBooking(null)
+          }
+          disabled={savingEdit}
+        >
+          Batal
+        </button>
+
+        <button
+          type="button"
+          className="edit-save-button"
+          onClick={saveEditBooking}
+          disabled={savingEdit}
+        >
+          {savingEdit
+            ? "Menyimpan..."
+            : "Simpan Perubahan"}
+        </button>
+
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }
