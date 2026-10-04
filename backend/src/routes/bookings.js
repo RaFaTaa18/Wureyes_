@@ -30,6 +30,7 @@ router.get(
           b.status,
           b.created_at,
           b.drive_folder_url,
+	  b.edited_drive_folder_url,
           b.selection_token,
           s.name AS service_name,
           s.price AS service_price  
@@ -165,6 +166,7 @@ router.put(
         event_date,
         location,
         message,
+	edited_drive_folder_url,
       } = req.body;
 
       // ===============================
@@ -242,7 +244,8 @@ router.put(
           service_id = ?,
           event_date = ?,
           location = ?,
-          message = ?
+          message = ?,
+	  edited_drive_folder_url = ?
         WHERE id = ?
         `,
         [
@@ -253,6 +256,7 @@ router.put(
           event_date,
           location || null,
           message || null,
+	  edited_drive_folder_url || null,
           id,
         ]
       );
