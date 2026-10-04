@@ -59,6 +59,19 @@ interface SelectionData {
 }
 
 const API_URL = import.meta.env.VITE_API_URL;
+function normalizeWhatsAppNumber(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+
+  if (digits.startsWith("62")) {
+    return digits;
+  }
+
+  if (digits.startsWith("0")) {
+    return `62${digits.slice(1)}`;
+  }
+
+  return digits;
+}
 
 export default function AdminBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -318,68 +331,149 @@ async function saveEditBooking() {
 }
 
   async function updateStatus(
-    id: number,
-    status: Booking["status"]
-  ) {
-    if (!token) {
-      setError(
-        "Session expired. Please login again."
-      );
+  id: number,
+  status: Booking["status"]
+) {
+  console.log("UPDATE STATUS CALLED:", id, status);
 
-      return;
+  if (!token) {
+    setError(
+      "Session expired. Please login again."
+    );
+
+    return;
+  }
+
+  const booking = bookings.find(
+    (item) => item.id === id
+  );
+
+  if (!booking) {
+    setError(
+      "Booking tidak ditemukan."
+    );
+
+    return;
+  }
+
+  const previousStatus = booking.status;
+
+  try {
+    setError("");
+
+    const response = await fetch(
+      `${API_URL}/api/bookings/${id}/status`,
+      {
+        method: "PATCH",
+
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+
+        body: JSON.stringify({
+          status,
+        }),
+      }
+    );
+
+    const result = await response.json();
+
+    if (
+      !response.ok ||
+      !result.success
+    ) {
+      throw new Error(
+        result.message ||
+          "Failed to update booking"
+      );
     }
 
-    try {
-      setError("");
+    setBookings(
+      (current) =>
+        current.map(
+          (item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  status,
+                }
+              : item
+        )
+    );
 
-      const response = await fetch(
-        `${API_URL}/api/bookings/${id}/status`,
-        {
-          method: "PATCH",
-
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-
-          body: JSON.stringify({
-            status,
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (
-        !response.ok ||
-        !result.success
-      ) {
-        throw new Error(
-          result.message ||
-            "Failed to update booking"
+    /*
+     * ==================================================
+     * WHATSAPP - STATUS COMPLETED
+     * ==================================================
+     *
+     * Hanya dijalankan ketika status benar-benar
+     * berubah menjadi completed.
+     */
+    if (
+      status === "completed" &&
+      previousStatus !== "completed"
+    ) {
+      const phone =
+        normalizeWhatsAppNumber(
+          booking.phone
         );
+
+      const driveUrl =
+        booking.drive_folder_url?.trim();
+
+      if (!phone) {
+        setError(
+          "Nomor WhatsApp klien tidak tersedia."
+        );
+
+        return;
       }
 
-      setBookings(
-        (current) =>
-          current.map(
-            (booking) =>
-              booking.id === id
-                ? {
-                    ...booking,
-                    status,
-                  }
-                : booking
-          )
-      );
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to update booking"
+      if (!driveUrl) {
+        setError(
+          "Status berhasil menjadi Completed, tetapi Google Drive belum dihubungkan ke booking ini."
+        );
+
+        return;
+      }
+
+      const message = `Hi ${booking.client_name}! 👋
+
+Hasil foto kamu sudah selesai! ✨
+
+Terima kasih sudah mempercayakan momen spesial kamu kepada Wureyes. 📸
+
+Kamu bisa mengakses hasil foto yang sudah kami edit melalui link Google Drive berikut:
+
+${driveUrl}
+
+⚠️ Catatan:
+Link Google Drive ini hanya dapat diakses selama 1 minggu sejak link dikirim. Harap segera download semua file yang diperlukan sebelum masa akses berakhir ya. 🙏
+
+Semoga kamu suka dengan hasilnya! 🤍
+
+— Wureyes_`;
+
+      const whatsappUrl =
+        `https://wa.me/${phone}?text=${encodeURIComponent(
+          message
+        )}`;
+
+      window.open(
+        whatsappUrl,
+        "_blank",
+        "noopener,noreferrer"
       );
     }
+  } catch (error) {
+    setError(
+      error instanceof Error
+        ? error.message
+        : "Failed to update booking"
+    );
   }
+}
 
   async function saveDriveFolder(
     bookingId: number
@@ -564,6 +658,66 @@ async function saveEditBooking() {
     setSelectedBooking(null);
     setSelectionData(null);
   }
+
+  function openWhatsApp(
+  booking: Booking
+) {
+  if (!booking.phone) {
+    setError(
+      "Nomor WhatsApp client belum tersedia."
+    );
+
+    return;
+  }
+
+  if (!booking.drive_folder_url) {
+    setError(
+      "Google Drive hasil edit belum terhubung ke booking ini."
+    );
+
+    return;
+  }
+
+  // Membersihkan nomor telepon
+  let phone = booking.phone.replace(
+    /\D/g,
+    ""
+  );
+
+  // 08xxxxxxxxxx → 628xxxxxxxxxx
+  if (phone.startsWith("0")) {
+    phone =
+      "62" + phone.substring(1);
+  }
+
+  const message = `Hi ${booking.client_name}! 👋
+
+Hasil foto kamu sudah selesai! ✨
+
+Terima kasih sudah mempercayakan momen spesial kamu kepada Wureyes. 📸
+
+Kamu bisa mengakses hasil foto yang sudah kami edit melalui link Google Drive berikut:
+
+${booking.drive_folder_url}
+
+⚠️ Catatan:
+Link Google Drive ini hanya dapat diakses selama 1 minggu sejak link dikirim. Harap segera download semua file yang diperlukan sebelum masa akses berakhir ya. 🙏
+
+Semoga kamu suka dengan hasilnya! 🤍
+
+— Wureyes_`;
+
+  const whatsappUrl =
+    `https://wa.me/${phone}?text=${encodeURIComponent(
+      message
+    )}`;
+
+  window.open(
+    whatsappUrl,
+    "_blank",
+    "noopener,noreferrer"
+  );
+}
 
   function getSelectionUrl(
     booking: Booking
