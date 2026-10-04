@@ -248,6 +248,99 @@ router.patch(
 );
 
 // =====================================================
+// ADMIN - SAVE EDITED GOOGLE DRIVE FOLDER
+// =====================================================
+
+router.patch(
+  "/admin/bookings/:id/edited-drive",
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const {
+        edited_drive_folder_url,
+      } = req.body;
+
+      if (!edited_drive_folder_url) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Edited Google Drive folder URL is required",
+        });
+      }
+
+      const driveUrl =
+        edited_drive_folder_url.trim();
+
+      if (
+        !driveUrl.startsWith(
+          "https://drive.google.com/"
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid Google Drive folder URL",
+        });
+      }
+
+      const [existing] = await pool.query(
+        `
+        SELECT
+          id,
+          client_name
+        FROM bookings
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [id]
+      );
+
+      if (existing.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Booking not found",
+        });
+      }
+
+      await pool.query(
+        `
+        UPDATE bookings
+        SET edited_drive_folder_url = ?
+        WHERE id = ?
+        `,
+        [driveUrl, id]
+      );
+
+      res.json({
+        success: true,
+        message:
+          "Edited Google Drive folder saved successfully",
+        data: {
+          booking_id: Number(id),
+          client_name:
+            existing[0].client_name,
+          edited_drive_folder_url:
+            driveUrl,
+        },
+      });
+    } catch (error) {
+      console.error(
+        "Save edited Drive folder error:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Failed to save edited Google Drive folder",
+      });
+    }
+  }
+);
+
+// =====================================================
 // ADMIN - GENERATE SELECTION TOKEN
 // =====================================================
 

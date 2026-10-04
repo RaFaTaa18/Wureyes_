@@ -23,6 +23,7 @@ interface Booking {
   service_price: number | null;
 
   drive_folder_url?: string | null;
+  edited_drive_folder_url?: string | null;
   selection_token?: string | null;
   selected_photos?: number;
 }
@@ -102,6 +103,12 @@ const [savingEdit, setSavingEdit] = useState(false);
   const [savingDrive, setSavingDrive] =
     useState<number | null>(null);
 
+  const [editedDriveUrls, setEditedDriveUrls] =
+    useState<Record<number, string>>({});
+
+  const [savingEditedDrive, setSavingEditedDrive] =
+    useState<number | null>(null);
+
   const [selectedBooking, setSelectedBooking] =
     useState<number | null>(null);
 
@@ -173,15 +180,21 @@ const [savingEdit, setSavingEdit] = useState(false);
       setBookings(result.data);
 
       const urls: Record<number, string> = {};
+const editedUrls: Record<number, string> = {};
 
-      result.data.forEach(
-        (booking: Booking) => {
-          urls[booking.id] =
-            booking.drive_folder_url || "";
-        }
-      );
+result.data.forEach(
+  (booking: Booking) => {
+    urls[booking.id] =
+      booking.drive_folder_url || "";
 
-      setDriveUrls(urls);
+    editedUrls[booking.id] =
+      booking.edited_drive_folder_url || "";
+  }
+);
+
+setDriveUrls(urls);
+setEditedDriveUrls(editedUrls);
+
     } catch (error) {
       setError(
         error instanceof Error
@@ -421,7 +434,7 @@ async function saveEditBooking() {
         );
 
       const driveUrl =
-        booking.drive_folder_url?.trim();
+  booking.edited_drive_folder_url?.trim();
 
       if (!phone) {
         setError(
@@ -433,7 +446,7 @@ async function saveEditBooking() {
 
       if (!driveUrl) {
         setError(
-          "Status berhasil menjadi Completed, tetapi Google Drive belum dihubungkan ke booking ini."
+          "Status berhasil menjadi Completed, tetapi Google Drive hasil edit belum dihubungkan ke booking ini."
         );
 
         return;
@@ -574,6 +587,111 @@ Semoga kamu suka dengan hasilnya! 🤍
       );
     } finally {
       setSavingDrive(null);
+    }
+  }
+
+ async function saveEditedDriveFolder(
+    bookingId: number
+  ) {
+    if (!token) {
+      setError(
+        "Session expired. Please login again."
+      );
+
+      return;
+    }
+
+    const driveUrl =
+      editedDriveUrls[bookingId]?.trim();
+
+    if (!driveUrl) {
+      setError(
+        "Masukkan URL folder Google Drive hasil edit terlebih dahulu."
+      );
+
+      return;
+    }
+
+    try {
+      setSavingEditedDrive(bookingId);
+      setError("");
+
+      const response = await fetch(
+        `${API_URL}/api/photo-selection/admin/bookings/${bookingId}/edited-drive`,
+        {
+          method: "PATCH",
+
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+
+          body: JSON.stringify({
+            edited_drive_folder_url: driveUrl,
+          }),
+        }
+      );
+
+      const result =
+        await response.json();
+
+      if (response.status === 401) {
+        sessionStorage.removeItem(
+          "wureyes_token"
+        );
+
+        sessionStorage.removeItem(
+          "wureyes_user"
+        );
+
+        window.location.href =
+          "/admin/login";
+
+        return;
+      }
+
+      if (
+        !response.ok ||
+        !result.success
+      ) {
+        throw new Error(
+          result.message ||
+            "Failed to save edited Google Drive folder"
+        );
+      }
+
+      setBookings(
+        (current) =>
+          current.map(
+            (booking) =>
+              booking.id === bookingId
+                ? {
+                    ...booking,
+                    edited_drive_folder_url:
+                      driveUrl,
+                  }
+                : booking
+          )
+      );
+
+      setEditedDriveUrls(
+        (current) => ({
+          ...current,
+          [bookingId]: driveUrl,
+        })
+      );
+
+      alert(
+        "Google Drive hasil edit berhasil dihubungkan."
+      );
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to save edited Google Drive folder"
+      );
+    } finally {
+      setSavingEditedDrive(null);
     }
   }
 
@@ -1356,6 +1474,72 @@ Semoga kamu suka dengan hasilnya! 🤍
                       </button>
 
                     </div>
+
+                    <div className="workflow-heading">
+
+                      <div>
+
+                        <span>
+                          EDITED RESULTS
+                        </span>
+
+                        <strong>
+                          Google Drive Hasil Edit
+                        </strong>
+
+                      </div>
+
+                      {booking.edited_drive_folder_url && (
+                        <span className="workflow-connected">
+                          ● Connected
+                        </span>
+                      )}
+
+                    </div>
+
+
+                    <div className="drive-input-row">
+
+                      <input
+                        type="url"
+                        placeholder="Paste Google Drive hasil edit URL..."
+                        value={
+                          editedDriveUrls[
+                            booking.id
+                          ] || ""
+                        }
+                        onChange={(event) =>
+                          setEditedDriveUrls(
+                            (current) => ({
+                              ...current,
+                              [booking.id]:
+                                event.target
+                                  .value,
+                            })
+                          )
+                        }
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          saveEditedDriveFolder(
+                            booking.id
+                          )
+                        }
+                        disabled={
+                          savingEditedDrive ===
+                          booking.id
+                        }
+                      >
+                        {savingEditedDrive ===
+                        booking.id
+                          ? "Saving..."
+                          : "Save"}
+                      </button>
+
+                    </div>
+
 
 
                     {selectionUrl && (
