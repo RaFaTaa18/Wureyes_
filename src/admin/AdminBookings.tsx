@@ -660,65 +660,6 @@ Semoga kamu suka dengan hasilnya! 🤍
     setSelectionData(null);
   }
 
-  function openWhatsApp(
-  booking: Booking
-) {
-  if (!booking.phone) {
-    setError(
-      "Nomor WhatsApp client belum tersedia."
-    );
-
-    return;
-  }
-
-  if (!booking.drive_folder_url) {
-    setError(
-      "Google Drive hasil edit belum terhubung ke booking ini."
-    );
-
-    return;
-  }
-
-  // Membersihkan nomor telepon
-  let phone = booking.phone.replace(
-    /\D/g,
-    ""
-  );
-
-  // 08xxxxxxxxxx → 628xxxxxxxxxx
-  if (phone.startsWith("0")) {
-    phone =
-      "62" + phone.substring(1);
-  }
-
-  const message = `Hi ${booking.client_name}! 👋
-
-Hasil foto kamu sudah selesai! ✨
-
-Terima kasih sudah mempercayakan momen spesial kamu kepada Wureyes. 📸
-
-Kamu bisa mengakses hasil foto yang sudah kami edit melalui link Google Drive berikut:
-
-${booking.drive_folder_url}
-
-⚠️ Catatan:
-Link Google Drive ini hanya dapat diakses selama 1 minggu sejak link dikirim. Harap segera download semua file yang diperlukan sebelum masa akses berakhir ya. 🙏
-
-Semoga kamu suka dengan hasilnya! 🤍
-
-— Wureyes_`;
-
-  const whatsappUrl =
-    `https://wa.me/${phone}?text=${encodeURIComponent(
-      message
-    )}`;
-
-  window.open(
-    whatsappUrl,
-    "_blank",
-    "noopener,noreferrer"
-  );
-}
 
   function getSelectionUrl(
     booking: Booking
