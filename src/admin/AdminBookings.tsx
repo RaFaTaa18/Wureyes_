@@ -85,6 +85,9 @@ export default function AdminBookings() {
    const [paymentAmounts, setPaymentAmounts] =
     useState<Record<number, string>>({});
 
+  const [paymentDates, setPaymentDates] =
+  useState<Record<number, string>>({});
+
   const [savingPayment, setSavingPayment] =
     useState<number | null>(null);
   
@@ -195,9 +198,15 @@ const [savingEdit, setSavingEdit] = useState(false);
 
       const urls: Record<number, string> = {};
 const editedUrls: Record<number, string> = {};
+const dates: Record<number, string> = {};
 
 result.data.forEach(
   (booking: Booking) => {
+if (booking.payment_date) {
+  dates[booking.id] =
+    booking.payment_date.substring(0, 10);
+}
+
     urls[booking.id] =
       booking.drive_folder_url || "";
 
@@ -208,6 +217,7 @@ result.data.forEach(
 
 setDriveUrls(urls);
 setEditedDriveUrls(editedUrls);
+setPaymentDates(dates);
 
     } catch (error) {
       setError(
@@ -506,7 +516,9 @@ Semoga kamu suka dengan hasilnya! 🤍
 async function updatePayment(
   bookingId: number,
   paymentStatus: "unpaid" | "paid",
-  servicePrice: number | null
+  servicePrice: number | null,
+  paymentDateOverride?: string,
+  paymentAmountOverride?: number
 ) {
   if (!token) {
     setError(
@@ -521,13 +533,21 @@ async function updatePayment(
     setError("");
 
     const amount =
-      paymentStatus === "paid"
-        ? Number(
-            paymentAmounts[bookingId] ||
-              servicePrice ||
-              0
-          )
-        : null;
+  paymentStatus === "paid"
+    ? paymentAmountOverride ??
+      Number(
+        paymentAmounts[bookingId] ||
+          servicePrice ||
+          0
+      )
+    : null;
+
+const paymentDate =
+  paymentStatus === "paid"
+    ? paymentDateOverride ??
+      paymentDates[bookingId] ??
+      new Date().toISOString().slice(0, 10)
+    : null;
 
     if (
   paymentStatus === "paid" &&
@@ -553,9 +573,10 @@ async function updatePayment(
         },
 
         body: JSON.stringify({
-          payment_status: paymentStatus,
-          payment_amount: amount,
-        }),
+  payment_status: paymentStatus,
+  payment_amount: amount,
+  payment_date: paymentDate,
+}),
       }
     );
 
@@ -599,11 +620,7 @@ async function updatePayment(
                     paymentStatus,
                   payment_amount:
                     amount,
-                  payment_date:
-                    paymentStatus ===
-                    "paid"
-                      ? new Date().toISOString()
-                      : null,
+                  payment_date: paymentDate,
                 }
               : booking
         )
@@ -618,6 +635,14 @@ async function updatePayment(
             : "",
       })
     );
+
+    setPaymentDates(
+  (current) => ({
+    ...current,
+    [bookingId]:
+      paymentDate || "",
+  })
+);
 
   } catch (error) {
     console.error(
@@ -1564,25 +1589,50 @@ async function updatePayment(
               | "paid";
 
           if (newStatus === "paid") {
-            setPaymentAmounts(
-              (current) => ({
-                ...current,
-                [booking.id]:
-                  current[booking.id] ||
-                  String(
-                    booking.payment_amount ??
-                    booking.service_price ??
-                    0
-                  ),
-              })
-            );
-          }
+  const amount = Number(
+    paymentAmounts[booking.id] ??
+    booking.payment_amount ??
+    booking.service_price ??
+    0
+  );
 
-          updatePayment(
-            booking.id,
-            newStatus,
-            booking.service_price
-          );
+  const paymentDate =
+    paymentDates[booking.id] ||
+    booking.payment_date?.substring(0, 10) ||
+    new Date().toISOString().slice(0, 10);
+
+  setPaymentAmounts(
+    (current) => ({
+      ...current,
+      [booking.id]:
+        String(amount),
+    })
+  );
+
+  setPaymentDates(
+    (current) => ({
+      ...current,
+      [booking.id]:
+        paymentDate,
+    })
+  );
+
+  updatePayment(
+    booking.id,
+    "paid",
+    booking.service_price,
+    paymentDate,
+    amount
+  );
+
+  return;
+}
+
+updatePayment(
+  booking.id,
+  "unpaid",
+  booking.service_price
+);
         }}
         disabled={
           savingPayment === booking.id
@@ -1627,6 +1677,28 @@ async function updatePayment(
           }
         />
       </div>
+
+      <div>
+  <span>TANGGAL PEMBAYARAN</span>
+
+  <input
+    type="date"
+    value={
+      paymentDates[booking.id] ??
+      booking.payment_date?.substring(0, 10) ??
+      ""
+    }
+    onChange={(event) =>
+      setPaymentDates(
+        (current) => ({
+          ...current,
+          [booking.id]:
+            event.target.value,
+        })
+      )
+    }
+  />
+</div>
 
       <button
         type="button"
