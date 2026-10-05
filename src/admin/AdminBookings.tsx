@@ -2006,15 +2006,6 @@ async function updatePayment(
   ⎙ Nota Pembayaran
 </button>
 
-<button
-  type="button"
-  className="receipt-print-button"
-  onClick={() =>
-    window.print()
-  }
->
-  🖨 Print / Save as PDF
-</button>
 
 
                     <div className="booking-status-control">
