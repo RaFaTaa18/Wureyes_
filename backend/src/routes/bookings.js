@@ -28,9 +28,12 @@ router.get(
           b.location,
           b.message,
           b.status,
+          b.payment_status,
+          b.payment_date,
+          b.payment_amount,
           b.created_at,
           b.drive_folder_url,
-	  b.edited_drive_folder_url,
+	        b.edited_drive_folder_url,
           b.selection_token,
           s.name AS service_name,
           s.price AS service_price  
@@ -346,6 +349,122 @@ router.patch(
         success: false,
         message:
           "Failed to update booking status",
+      });
+    }
+  }
+);
+
+// =====================================================
+// UPDATE BOOKING PAYMENT - ADMIN ONLY
+// =====================================================
+
+router.patch(
+  "/:id/payment",
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const {
+        payment_status,
+        payment_amount,
+      } = req.body;
+
+      const allowedPaymentStatuses = [
+        "unpaid",
+        "paid",
+      ];
+
+      if (
+        !allowedPaymentStatuses.includes(
+          payment_status
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid payment status",
+        });
+      }
+
+      const [existing] = await pool.query(
+        `
+        SELECT id, service_id
+        FROM bookings
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [id]
+      );
+
+      if (existing.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Booking not found",
+        });
+      }
+
+      let amount = null;
+
+      if (
+        payment_status === "paid"
+      ) {
+        amount = Number(payment_amount);
+
+        if (
+          !Number.isFinite(amount) ||
+          amount < 0
+        ) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Invalid payment amount",
+          });
+        }
+      }
+
+      await pool.query(
+        `
+        UPDATE bookings
+        SET
+          payment_status = ?,
+          payment_amount = ?,
+          payment_date = ?
+        WHERE id = ?
+        `,
+        [
+          payment_status,
+          amount,
+          payment_status === "paid"
+            ? new Date()
+            : null,
+          id,
+        ]
+      );
+
+      res.json({
+        success: true,
+        message:
+          "Payment updated successfully",
+        data: {
+          booking_id: Number(id),
+          payment_status,
+          payment_amount: amount,
+          payment_date:
+            payment_status === "paid"
+              ? new Date()
+              : null,
+        },
+      });
+    } catch (error) {
+      console.error(
+        "Update payment error:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Failed to update payment",
       });
     }
   }

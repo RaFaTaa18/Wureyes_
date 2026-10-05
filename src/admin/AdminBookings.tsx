@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import "./AdminBookings.css";
 
 interface Booking {
@@ -21,6 +21,10 @@ interface Booking {
 
   service_name: string;
   service_price: number | null;
+
+  payment_status: "unpaid" | "paid";
+  payment_date?: string | null;
+  payment_amount?: number | null;
 
   drive_folder_url?: string | null;
   edited_drive_folder_url?: string | null;
@@ -77,6 +81,13 @@ function normalizeWhatsAppNumber(phone: string) {
 
 export default function AdminBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
+
+   const [paymentAmounts, setPaymentAmounts] =
+    useState<Record<number, string>>({});
+
+  const [savingPayment, setSavingPayment] =
+    useState<number | null>(null);
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -486,6 +497,137 @@ Semoga kamu suka dengan hasilnya! 🤍
         ? error.message
         : "Failed to update booking"
     );
+  }
+}
+
+async function updatePayment(
+  bookingId: number,
+  paymentStatus: "unpaid" | "paid",
+  servicePrice: number | null
+) {
+  if (!token) {
+    setError(
+      "Session expired. Please login again."
+    );
+
+    return;
+  }
+
+  try {
+    setSavingPayment(bookingId);
+    setError("");
+
+    const amount =
+      paymentStatus === "paid"
+        ? Number(
+            paymentAmounts[bookingId] ||
+              servicePrice ||
+              0
+          )
+        : null;
+
+    if (
+  paymentStatus === "paid" &&
+  amount !== null &&
+  (!Number.isFinite(amount) ||
+    amount < 0)
+) {
+      setError(
+        "Jumlah pembayaran tidak valid."
+      );
+
+      return;
+    }
+
+    const response = await fetch(
+      `${API_URL}/api/bookings/${bookingId}/payment`,
+      {
+        method: "PATCH",
+
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+
+        body: JSON.stringify({
+          payment_status: paymentStatus,
+          payment_amount: amount,
+        }),
+      }
+    );
+
+    const result =
+      await response.json();
+
+    if (response.status === 401) {
+      sessionStorage.removeItem(
+        "wureyes_token"
+      );
+
+      sessionStorage.removeItem(
+        "wureyes_user"
+      );
+
+      window.location.href =
+        "/admin/login";
+
+      return;
+    }
+
+    if (
+      !response.ok ||
+      !result.success
+    ) {
+      throw new Error(
+        result.message ||
+          "Failed to update payment"
+      );
+    }
+
+    setBookings(
+      (current) =>
+        current.map(
+          (booking) =>
+            booking.id === bookingId
+              ? {
+                  ...booking,
+                  payment_status:
+                    paymentStatus,
+                  payment_amount:
+                    amount,
+                  payment_date:
+                    paymentStatus ===
+                    "paid"
+                      ? new Date().toISOString()
+                      : null,
+                }
+              : booking
+        )
+    );
+
+    setPaymentAmounts(
+      (current) => ({
+        ...current,
+        [bookingId]:
+          amount !== null
+            ? String(amount)
+            : "",
+      })
+    );
+
+  } catch (error) {
+    console.error(
+      "Update payment error:",
+      error
+    );
+
+    setError(
+      error instanceof Error
+        ? error.message
+        : "Failed to update payment"
+    );
+  } finally {
+    setSavingPayment(null);
   }
 }
 
@@ -1327,6 +1469,161 @@ Semoga kamu suka dengan hasilnya! 🤍
 
                   </div>
 
+                  {/* PAYMENT */}
+
+<section className="booking-payment">
+
+  <div className="payment-heading">
+
+    <div>
+      <span>PAYMENT</span>
+      <strong>Payment Information</strong>
+    </div>
+
+    <span
+      className={`payment-status ${
+        booking.payment_status === "paid"
+          ? "paid"
+          : "unpaid"
+      }`}
+    >
+      {booking.payment_status === "paid"
+        ? "LUNAS"
+        : "BELUM LUNAS"}
+    </span>
+
+  </div>
+
+  <div className="payment-info-grid">
+
+    <div className="payment-info-item">
+      <span>SERVICE</span>
+
+      <strong>
+        {booking.service_name}
+      </strong>
+    </div>
+
+    <div className="payment-info-item">
+      <span>HARGA</span>
+
+      <strong>
+        {formatPrice(booking.service_price)}
+      </strong>
+    </div>
+
+    <div className="payment-info-item">
+      <span>JUMLAH DIBAYAR</span>
+
+      <strong>
+        {formatPrice(
+          booking.payment_amount ?? null
+        )}
+      </strong>
+    </div>
+
+    <div className="payment-info-item">
+      <span>STATUS</span>
+
+      <select
+        value={
+          booking.payment_status || "unpaid"
+        }
+        onChange={(event) => {
+
+          const newStatus =
+            event.target.value as
+              | "unpaid"
+              | "paid";
+
+          if (newStatus === "paid") {
+            setPaymentAmounts(
+              (current) => ({
+                ...current,
+                [booking.id]:
+                  current[booking.id] ||
+                  String(
+                    booking.payment_amount ??
+                    booking.service_price ??
+                    0
+                  ),
+              })
+            );
+          }
+
+          updatePayment(
+            booking.id,
+            newStatus,
+            booking.service_price
+          );
+        }}
+        disabled={
+          savingPayment === booking.id
+        }
+      >
+        <option value="unpaid">
+          Belum Lunas
+        </option>
+
+        <option value="paid">
+          Lunas
+        </option>
+      </select>
+    </div>
+
+  </div>
+
+  {booking.payment_status === "paid" && (
+
+    <div className="payment-edit">
+
+      <div>
+        <span>JUMLAH PEMBAYARAN</span>
+
+        <input
+          type="number"
+          min="0"
+          value={
+            paymentAmounts[booking.id] ??
+            booking.payment_amount ??
+            booking.service_price ??
+            ""
+          }
+          onChange={(event) =>
+            setPaymentAmounts(
+              (current) => ({
+                ...current,
+                [booking.id]:
+                  event.target.value,
+              })
+            )
+          }
+        />
+      </div>
+
+      <button
+        type="button"
+        onClick={() =>
+          updatePayment(
+            booking.id,
+            "paid",
+            booking.service_price
+          )
+        }
+        disabled={
+          savingPayment === booking.id
+        }
+      >
+        {savingPayment === booking.id
+          ? "Saving..."
+          : "Simpan Pembayaran"}
+      </button>
+
+    </div>
+
+  )}
+
+</section>
 
                   {/* DETAILS */}
 
@@ -2071,5 +2368,6 @@ Semoga kamu suka dengan hasilnya! 🤍
   </div>
 )}
     </div>
+    
   );
 }
