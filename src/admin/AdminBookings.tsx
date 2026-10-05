@@ -123,6 +123,9 @@ const [savingEdit, setSavingEdit] = useState(false);
   const [selectedBooking, setSelectedBooking] =
     useState<number | null>(null);
 
+  const [receiptBooking, setReceiptBooking] =
+  useState<Booking | null>(null);
+
   const [selectionData, setSelectionData] =
     useState<SelectionData | null>(null);
 
@@ -555,6 +558,7 @@ async function updatePayment(
         }),
       }
     );
+
 
     const result =
       await response.json();
@@ -999,6 +1003,29 @@ async function updatePayment(
       price
     ).toLocaleString("id-ID")}`;
   }
+
+  function formatReceiptDate(
+  date: string | null | undefined
+) {
+  if (!date) {
+    return "-";
+  }
+
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "-";
+  }
+
+  return parsedDate.toLocaleDateString(
+    "id-ID",
+    {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }
+  );
+}
 
   function formatCreatedAt(
     date: string
@@ -1971,6 +1998,24 @@ async function updatePayment(
   ✎ Edit
 </button>
 
+<button
+  type="button"
+  className="booking-receipt-button"
+  onClick={() => setReceiptBooking(booking)}
+>
+  ⎙ Nota Pembayaran
+</button>
+
+<button
+  type="button"
+  className="receipt-print-button"
+  onClick={() =>
+    window.print()
+  }
+>
+  🖨 Print / Save as PDF
+</button>
+
 
                     <div className="booking-status-control">
 
@@ -2021,6 +2066,268 @@ async function updatePayment(
         </div>
       )}
 
+{/* PAYMENT RECEIPT MODAL */}
+
+{receiptBooking && (
+  <div
+    className="receipt-modal-overlay"
+    onClick={() =>
+      setReceiptBooking(null)
+    }
+  >
+    <div
+      className="receipt-modal"
+      onClick={(event) =>
+        event.stopPropagation()
+      }
+    >
+
+      <div className="receipt-modal-header">
+
+        <div>
+          <span>PAYMENT RECEIPT</span>
+
+          <h2>
+            Nota Pembayaran
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          className="receipt-close-button"
+          onClick={() =>
+            setReceiptBooking(null)
+          }
+        >
+          ×
+        </button>
+
+      </div>
+
+      <div className="payment-receipt">
+
+        <div className="receipt-brand">
+          <div className="receipt-brand-name">
+            Wureyes_
+          </div>
+
+          <div className="receipt-brand-subtitle">
+            PHOTOGRAPHY • VIDEOGRAPHY • EDITING
+          </div>
+        </div>
+
+        <div className="receipt-title">
+          <span>PAYMENT RECEIPT</span>
+
+          <h1>
+            Nota Pembayaran
+          </h1>
+        </div>
+
+        <div className="receipt-number">
+
+          <span>
+            NO. BOOKING
+          </span>
+
+          <strong>
+            WR-
+            {new Date()
+              .getFullYear()}
+            -
+            {String(
+              receiptBooking.id
+            ).padStart(3, "0")}
+          </strong>
+
+        </div>
+
+        <div className="receipt-divider" />
+
+        <div className="receipt-section">
+
+          <div className="receipt-row">
+
+            <span>
+              Nama Klien
+            </span>
+
+            <strong>
+              {receiptBooking.client_name}
+            </strong>
+
+          </div>
+
+          <div className="receipt-row">
+
+            <span>
+              Email
+            </span>
+
+            <strong>
+              {receiptBooking.email}
+            </strong>
+
+          </div>
+
+          <div className="receipt-row">
+
+            <span>
+              Service
+            </span>
+
+            <strong>
+              {receiptBooking.service_name}
+            </strong>
+
+          </div>
+
+          <div className="receipt-row">
+
+            <span>
+              Tanggal Event
+            </span>
+
+            <strong>
+              {formatReceiptDate(
+                receiptBooking.event_date
+              )}
+            </strong>
+
+          </div>
+
+        </div>
+
+        <div className="receipt-divider" />
+
+        <div className="receipt-payment">
+
+          <div className="receipt-row">
+
+            <span>
+              Harga Service
+            </span>
+
+            <strong>
+              {formatPrice(
+                receiptBooking.service_price
+              )}
+            </strong>
+
+          </div>
+
+          <div className="receipt-row">
+
+            <span>
+              Jumlah Dibayar
+            </span>
+
+            <strong>
+              {formatPrice(
+                receiptBooking.payment_amount ??
+                  null
+              )}
+            </strong>
+
+          </div>
+
+          <div className="receipt-status-row">
+
+            <span>
+              Status Pembayaran
+            </span>
+
+            <strong
+              className={
+                receiptBooking.payment_status ===
+                "paid"
+                  ? "receipt-paid"
+                  : "receipt-unpaid"
+              }
+            >
+              {receiptBooking.payment_status ===
+              "paid"
+                ? "LUNAS"
+                : "BELUM LUNAS"}
+            </strong>
+
+          </div>
+
+          <div className="receipt-row">
+
+            <span>
+              Tanggal Pembayaran
+            </span>
+
+            <strong>
+              {formatReceiptDate(
+                receiptBooking.payment_date
+              )}
+            </strong>
+
+          </div>
+
+        </div>
+
+        <div className="receipt-divider" />
+
+        <div className="receipt-total">
+
+          <span>
+            TOTAL DIBAYAR
+          </span>
+
+          <strong>
+            {formatPrice(
+              receiptBooking.payment_amount ??
+                null
+            )}
+          </strong>
+
+        </div>
+
+        <div className="receipt-footer">
+
+          <p>
+            Terima kasih telah menggunakan
+            jasa Wureyes_.
+          </p>
+
+          <span>
+            Photography • Videography • Editing
+          </span>
+
+        </div>
+
+      </div>
+
+      <div className="receipt-actions">
+
+        <button
+          type="button"
+          className="receipt-print-button"
+          onClick={() =>
+            window.print()
+          }
+        >
+          🖨 Print / Save as PDF
+        </button>
+
+        <button
+          type="button"
+          className="receipt-cancel-button"
+          onClick={() =>
+            setReceiptBooking(null)
+          }
+        >
+          Tutup
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+)}
 
       {/* PHOTO SELECTION MODAL */}
 
@@ -2367,6 +2674,8 @@ async function updatePayment(
     </div>
   </div>
 )}
+
+
     </div>
     
   );
