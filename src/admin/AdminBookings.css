@@ -2135,6 +2135,22 @@
     0 24px 80px rgba(0, 0, 0, 0.2);
 }
 
+.payment-receipt {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+
+  margin: 24px;
+  padding: 32px;
+
+  background: #fff;
+
+  border: 1px solid #e5e1d8;
+  border-radius: 12px;
+
+  color: #292929;
+}
+
 .receipt-modal-header {
   display: flex;
   align-items: center;
@@ -2483,10 +2499,23 @@
   }
 
   .payment-receipt {
-    margin: 0 !important;
-    padding: 30px !important;
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-  }
+  margin: 0 !important;
+  padding: 0 !important;
+
+  width: 100% !important;
+  max-width: none !important;
+
+  overflow: visible !important;
+
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+
+  background: #fff !important;
+}
+
+  @page {
+  size: A4;
+  margin: 12mm;
+}
 }

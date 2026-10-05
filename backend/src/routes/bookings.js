@@ -366,9 +366,10 @@ router.patch(
     try {
       const { id } = req.params;
       const {
-        payment_status,
-        payment_amount,
-      } = req.body;
+  payment_status,
+  payment_amount,
+  payment_date,
+} = req.body;
 
       const allowedPaymentStatuses = [
         "unpaid",
@@ -422,24 +423,27 @@ router.patch(
         }
       }
 
-      await pool.query(
-        `
-        UPDATE bookings
-        SET
-          payment_status = ?,
-          payment_amount = ?,
-          payment_date = ?
-        WHERE id = ?
-        `,
-        [
-          payment_status,
-          amount,
-          payment_status === "paid"
-            ? new Date()
-            : null,
-          id,
-        ]
-      );
+      const selectedPaymentDate =
+  payment_status === "paid"
+    ? payment_date || null
+    : null;
+
+await pool.query(
+  `
+  UPDATE bookings
+  SET
+    payment_status = ?,
+    payment_amount = ?,
+    payment_date = ?
+  WHERE id = ?
+  `,
+  [
+    payment_status,
+    amount,
+    selectedPaymentDate,
+    id,
+  ]
+);
 
       res.json({
         success: true,
@@ -449,10 +453,7 @@ router.patch(
           booking_id: Number(id),
           payment_status,
           payment_amount: amount,
-          payment_date:
-            payment_status === "paid"
-              ? new Date()
-              : null,
+          payment_date: selectedPaymentDate,
         },
       });
     } catch (error) {
