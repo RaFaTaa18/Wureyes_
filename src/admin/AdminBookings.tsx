@@ -204,6 +204,16 @@
 
         setBookings(result.data);
 
+setReceiptBooking((current) => {
+  if (!current) return null;
+
+  const updatedBooking = result.data.find(
+    (booking: Booking) => booking.id === current.id
+  );
+
+  return updatedBooking ?? current;
+});
+
         const urls: Record<number, string> = {};
   const editedUrls: Record<number, string> = {};
   const dates: Record<number, string> = {};
@@ -606,6 +616,18 @@ const amount =
 
     return;
   }
+
+  console.log("DATA PEMBAYARAN YANG DIKIRIM:", {
+  bookingId,
+  payment_status: paymentStatus,
+  payment_amount: amount,
+  payment_date: paymentDate,
+  additional_fee_amount: Number(
+    additionalFees[bookingId] ?? 0
+  ),
+  additional_fee_description:
+    additionalFeeDescriptions[bookingId] ?? "",
+});
 
       const response = await fetch(
         `${API_URL}/api/bookings/${bookingId}/payment`,
