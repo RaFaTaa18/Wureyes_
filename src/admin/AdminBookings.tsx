@@ -25,7 +25,9 @@ interface Booking {
   payment_status: "unpaid" | "paid";
   payment_date?: string | null;
   payment_amount?: number | null;
-
+  
+  additional_fee_amount?: number | null;
+  additional_fee_description?: string | null;
   drive_folder_url?: string | null;
   edited_drive_folder_url?: string | null;
   selection_token?: string | null;
@@ -86,6 +88,12 @@ export default function AdminBookings() {
     useState<Record<number, string>>({});
 
   const [paymentDates, setPaymentDates] =
+  useState<Record<number, string>>({});
+
+  const [additionalFees, setAdditionalFees] =
+  useState<Record<number, string>>({});
+
+const [additionalFeeDescriptions, setAdditionalFeeDescriptions] =
   useState<Record<number, string>>({});
 
   const [savingPayment, setSavingPayment] =
@@ -199,25 +207,51 @@ const [savingEdit, setSavingEdit] = useState(false);
       const urls: Record<number, string> = {};
 const editedUrls: Record<number, string> = {};
 const dates: Record<number, string> = {};
+const amounts: Record<number, string> = {};
+const feeAmounts: Record<number, string> = {};
+const feeDescriptions: Record<number, string> = {};
 
 result.data.forEach(
   (booking: Booking) => {
-if (booking.payment_date) {
-  dates[booking.id] =
-    booking.payment_date.substring(0, 10);
-}
+    if (booking.payment_date) {
+      dates[booking.id] =
+        booking.payment_date.substring(0, 10);
+    }
+
+    if (
+      booking.payment_amount !== null &&
+      booking.payment_amount !== undefined
+    ) {
+      amounts[booking.id] =
+        String(booking.payment_amount);
+    }
 
     urls[booking.id] =
       booking.drive_folder_url || "";
 
     editedUrls[booking.id] =
       booking.edited_drive_folder_url || "";
+
+    amounts[booking.id] =
+  booking.payment_amount != null
+    ? String(booking.payment_amount)
+    : "";
+
+    feeAmounts[booking.id] = String(
+  booking.additional_fee_amount ?? 0
+);
+
+feeDescriptions[booking.id] =
+  booking.additional_fee_description ?? "";
   }
 );
 
 setDriveUrls(urls);
 setEditedDriveUrls(editedUrls);
 setPaymentDates(dates);
+setPaymentAmounts(amounts);
+setAdditionalFees(feeAmounts);
+setAdditionalFeeDescriptions(feeDescriptions);
 
     } catch (error) {
       setError(
@@ -532,15 +566,17 @@ async function updatePayment(
     setSavingPayment(bookingId);
     setError("");
 
-    const amount =
+    
+const amount =
   paymentStatus === "paid"
     ? paymentAmountOverride ??
       Number(
-        paymentAmounts[bookingId] ||
-          servicePrice ||
+        paymentAmounts[bookingId] ??
+          servicePrice ??
           0
       )
     : null;
+
 
 const paymentDate =
   paymentStatus === "paid"
@@ -549,18 +585,21 @@ const paymentDate =
       new Date().toISOString().slice(0, 10)
     : null;
 
-    if (
+    
+if (
   paymentStatus === "paid" &&
-  amount !== null &&
-  (!Number.isFinite(amount) ||
-    amount < 0)
+  (
+    amount === null ||
+    !Number.isFinite(amount) ||
+    amount <= 0
+  )
 ) {
-      setError(
-        "Jumlah pembayaran tidak valid."
-      );
+  setError(
+    "Jumlah pembayaran harus lebih besar dari Rp0."
+  );
 
-      return;
-    }
+  return;
+}
 
     const response = await fetch(
       `${API_URL}/api/bookings/${bookingId}/payment`,
@@ -576,6 +615,11 @@ const paymentDate =
   payment_status: paymentStatus,
   payment_amount: amount,
   payment_date: paymentDate,
+  additional_fee_amount: Number(
+  additionalFees[bookingId] ?? 0
+),
+  additional_fee_description:
+    additionalFeeDescriptions[bookingId] ?? "",
 }),
       }
     );
@@ -609,22 +653,50 @@ const paymentDate =
       );
     }
 
-    setBookings(
-      (current) =>
-        current.map(
-          (booking) =>
-            booking.id === bookingId
-              ? {
-                  ...booking,
-                  payment_status:
-                    paymentStatus,
-                  payment_amount:
-                    amount,
-                  payment_date: paymentDate,
-                }
-              : booking
-        )
-    );
+    const savedPayment = result.data;
+
+if (!savedPayment) {
+  throw new Error(
+    "Data pembayaran tidak diterima dari server."
+  );
+}
+
+
+    setBookings((current) =>
+  current.map((booking) =>
+    booking.id === bookingId
+      ? {
+          ...booking,
+          payment_status: savedPayment.payment_status,
+          payment_amount: savedPayment.payment_amount,
+          payment_date: savedPayment.payment_date,
+          additional_fee_amount:
+            savedPayment.additional_fee_amount,
+          additional_fee_description:
+            savedPayment.additional_fee_description,
+        }
+      : booking
+  )
+);
+
+
+setReceiptBooking((current) =>
+  current?.id === bookingId
+    ? {
+        ...current,
+        payment_status:
+          savedPayment.payment_status,
+        payment_amount:
+          savedPayment.payment_amount,
+        payment_date:
+          savedPayment.payment_date,
+        additional_fee_amount:
+          savedPayment.additional_fee_amount,
+        additional_fee_description:
+          savedPayment.additional_fee_description,
+      }
+    : current
+);
 
     setPaymentAmounts(
       (current) => ({
@@ -643,6 +715,19 @@ const paymentDate =
       paymentDate || "",
   })
 );
+
+setAdditionalFees((current) => ({
+  ...current,
+  [bookingId]: String(
+    savedPayment.additional_fee_amount ?? 0
+  ),
+}));
+
+setAdditionalFeeDescriptions((current) => ({
+  ...current,
+  [bookingId]:
+    savedPayment.additional_fee_description ?? "",
+}));
 
   } catch (error) {
     console.error(
@@ -1679,6 +1764,40 @@ updatePayment(
       </div>
 
       <div>
+  <span>BIAYA TAMBAHAN (RP)</span>
+
+  <input
+    type="number"
+    min="0"
+    value={additionalFees[booking.id] ?? "0"}
+onChange={(event) =>
+  setAdditionalFees((current) => ({
+    ...current,
+    [booking.id]: event.target.value,
+  }))
+}
+    placeholder="0"
+  />
+</div>
+
+<div>
+  <span>KETERANGAN BIAYA TAMBAHAN</span>
+
+  <input
+    type="text"
+    maxLength={255}
+    value={additionalFeeDescriptions[booking.id] ?? ""}
+    onChange={(event) =>
+      setAdditionalFeeDescriptions((current) => ({
+        ...current,
+        [booking.id]: event.target.value,
+      }))
+    }
+    placeholder="Contoh: Biaya transportasi"
+  />
+</div>
+
+      <div>
   <span>TANGGAL PEMBAYARAN</span>
 
   <input
@@ -2278,6 +2397,25 @@ updatePayment(
             </strong>
 
           </div>
+          <div className="receipt-row">
+  <span>Biaya Tambahan</span>
+
+  <strong>
+    {formatPrice(
+      receiptBooking.additional_fee_amount ?? 0
+    )}
+  </strong>
+</div>
+
+{receiptBooking.additional_fee_description && (
+  <div className="receipt-row">
+    <span>Keterangan</span>
+
+    <strong>
+      {receiptBooking.additional_fee_description}
+    </strong>
+  </div>
+)}
 
           <div className="receipt-row">
 
@@ -2337,15 +2475,15 @@ updatePayment(
         <div className="receipt-total">
 
           <span>
-            TOTAL DIBAYAR
+            TOTAL TAGIHAN
           </span>
 
           <strong>
-            {formatPrice(
-              receiptBooking.payment_amount ??
-                null
-            )}
-          </strong>
+  {formatPrice(
+    Number(receiptBooking.service_price ?? 0) +
+    Number(receiptBooking.additional_fee_amount ?? 0)
+  )}
+</strong>
 
         </div>
 
