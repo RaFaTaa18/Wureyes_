@@ -263,24 +263,6 @@ setReceiptBooking((current) => {
   setAdditionalFees(feeAmounts);
   setAdditionalFeeDescriptions(feeDescriptions);
 
-  const bookingDebug = result.data.find(
-  (booking: Booking) => booking.id === 3
-);
-
-console.log("DETAIL BIAYA BOOKING 3:", {
-  id: bookingDebug?.id,
-  service_price: bookingDebug?.service_price,
-  payment_amount: bookingDebug?.payment_amount,
-  additional_fee_amount: bookingDebug?.additional_fee_amount,
-  additional_fee_description:
-    bookingDebug?.additional_fee_description,
-});
-
-console.log(
-  "STATE BIAYA TAMBAHAN:",
-  feeAmounts[3]
-);
-
       } catch (error) {
         setError(
           error instanceof Error
@@ -634,18 +616,6 @@ const amount =
 
     return;
   }
-
-  console.log("DATA PEMBAYARAN YANG DIKIRIM:", {
-  bookingId,
-  payment_status: paymentStatus,
-  payment_amount: amount,
-  payment_date: paymentDate,
-  additional_fee_amount: Number(
-    additionalFees[bookingId] ?? 0
-  ),
-  additional_fee_description:
-    additionalFeeDescriptions[bookingId] ?? "",
-});
 
       const response = await fetch(
         `${API_URL}/api/bookings/${bookingId}/payment`,
