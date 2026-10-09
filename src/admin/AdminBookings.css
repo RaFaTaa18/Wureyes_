@@ -2519,3 +2519,16 @@
   margin: 12mm;
 }
 }
+
+/* FIX: Payment status dropdown */
+.payment-info-item select {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.payment-info-item select:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
