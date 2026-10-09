@@ -263,12 +263,18 @@ setReceiptBooking((current) => {
   setAdditionalFees(feeAmounts);
   setAdditionalFeeDescriptions(feeDescriptions);
 
-  console.log(
-  "BIAYA TAMBAHAN DARI API:",
-  result.data.find(
-    (booking: Booking) => booking.id === 3
-  )
+  const bookingDebug = result.data.find(
+  (booking: Booking) => booking.id === 3
 );
+
+console.log("DETAIL BIAYA BOOKING 3:", {
+  id: bookingDebug?.id,
+  service_price: bookingDebug?.service_price,
+  payment_amount: bookingDebug?.payment_amount,
+  additional_fee_amount: bookingDebug?.additional_fee_amount,
+  additional_fee_description:
+    bookingDebug?.additional_fee_description,
+});
 
 console.log(
   "STATE BIAYA TAMBAHAN:",
