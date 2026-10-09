@@ -29,14 +29,19 @@ router.get(
           b.message,
           b.status,
           b.payment_status,
-          b.payment_date,
+          DATE_FORMAT(
+            b.payment_date,
+            '%Y-%m-%d'
+          ) AS payment_date,
           b.payment_amount,
+          b.additional_fee_amount,
+          b.additional_fee_description,
           b.created_at,
           b.drive_folder_url,
-	        b.edited_drive_folder_url,
+          b.edited_drive_folder_url,
           b.selection_token,
           s.name AS service_name,
-          s.price AS service_price  
+          s.price AS service_price
         FROM bookings b
         INNER JOIN services s
           ON b.service_id = s.id
@@ -355,8 +360,8 @@ router.patch(
 );
 
 // =====================================================
-// UPDATE BOOKING PAYMENT - ADMIN ONLY
-// =====================================================
+ // UPDATE BOOKING PAYMENT - ADMIN ONLY
+ // =====================================================
 
 router.patch(
   "/:id/payment",
@@ -369,8 +374,11 @@ router.patch(
   payment_status,
   payment_amount,
   payment_date,
+  additional_fee_amount,
+  additional_fee_description,
 } = req.body;
 
+      // 1. Validate payment status
       const allowedPaymentStatuses = [
         "unpaid",
         "paid",
@@ -387,9 +395,10 @@ router.patch(
         });
       }
 
+      // 2. Check whether booking exists
       const [existing] = await pool.query(
         `
-        SELECT id, service_id
+        SELECT id
         FROM bookings
         WHERE id = ?
         LIMIT 1
@@ -404,57 +413,165 @@ router.patch(
         });
       }
 
+      // 3. Prepare payment data
       let amount = null;
+      let selectedPaymentDate = null;
 
-      if (
-        payment_status === "paid"
-      ) {
-        amount = Number(payment_amount);
-
+      if (payment_status === "paid") {
+        // Validate amount
         if (
-          !Number.isFinite(amount) ||
-          amount < 0
+          payment_amount === null ||
+          payment_amount === undefined ||
+          String(payment_amount).trim() === ""
         ) {
           return res.status(400).json({
             success: false,
             message:
-              "Invalid payment amount",
+              "Jumlah pembayaran wajib diisi.",
           });
         }
+
+        amount = Number(payment_amount);
+
+        if (
+          !Number.isFinite(amount) ||
+          amount <= 0
+        ) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Jumlah pembayaran harus lebih besar dari Rp0.",
+          });
+        }
+
+        // Validate date format and actual calendar date
+        if (
+          typeof payment_date !== "string" ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(payment_date)
+        ) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Tanggal pembayaran wajib diisi dengan format YYYY-MM-DD.",
+          });
+        }
+
+        const [year, month, day] =
+          payment_date.split("-").map(Number);
+
+        const parsedDate = new Date(
+          Date.UTC(year, month - 1, day)
+        );
+
+        const validDate =
+          parsedDate.getUTCFullYear() === year &&
+          parsedDate.getUTCMonth() === month - 1 &&
+          parsedDate.getUTCDate() === day;
+
+        if (!validDate) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Tanggal pembayaran tidak valid.",
+          });
+        }
+
+        selectedPaymentDate = payment_date;
       }
 
-      const selectedPaymentDate =
-  payment_status === "paid"
-    ? payment_date || null
-    : null;
+      const additionalFee = Number(
+  additional_fee_amount ?? 0
+);
 
-await pool.query(
+if (
+  !Number.isFinite(additionalFee) ||
+  additionalFee < 0
+) {
+  return res.status(400).json({
+    success: false,
+    message:
+      "Biaya tambahan tidak boleh negatif.",
+  });
+}
+
+const additionalFeeDescription =
+  String(
+    additional_fee_description ?? ""
+  ).trim();
+
+if (
+  additionalFeeDescription.length > 255
+) {
+  return res.status(400).json({
+    success: false,
+    message:
+      "Deskripsi biaya tambahan maksimal 255 karakter.",
+  });
+}
+
+      // 4. Save payment data to MySQL
+      await pool.query(
   `
   UPDATE bookings
   SET
     payment_status = ?,
     payment_amount = ?,
-    payment_date = ?
+    payment_date = ?,
+    additional_fee_amount = ?,
+    additional_fee_description = ?
   WHERE id = ?
   `,
   [
     payment_status,
     amount,
     selectedPaymentDate,
+    additionalFee,
+    additionalFeeDescription || null,
     id,
   ]
 );
 
+      // 5. Return saved payment data
+      // 5. Read saved payment data from MySQL
+      const [updatedRows] = await pool.query(
+  `
+  SELECT
+    id,
+    payment_status,
+    payment_amount,
+    DATE_FORMAT(
+      payment_date,
+      '%Y-%m-%d'
+    ) AS payment_date,
+    additional_fee_amount,
+    additional_fee_description
+  FROM bookings
+  WHERE id = ?
+  LIMIT 1
+  `,
+  [id]
+);
+
+      const updatedPayment = updatedRows[0];
+
       res.json({
         success: true,
-        message:
-          "Payment updated successfully",
+        message: "Payment updated successfully",
         data: {
-          booking_id: Number(id),
-          payment_status,
-          payment_amount: amount,
-          payment_date: selectedPaymentDate,
-        },
+  booking_id: Number(updatedPayment.id),
+  payment_status:
+    updatedPayment.payment_status,
+  payment_amount:
+    updatedPayment.payment_amount === null
+      ? null
+      : Number(updatedPayment.payment_amount),
+  payment_date:
+    updatedPayment.payment_date,
+  additional_fee_amount:
+    Number(updatedPayment.additional_fee_amount ?? 0),
+  additional_fee_description:
+    updatedPayment.additional_fee_description ?? "",
+},
       });
     } catch (error) {
       console.error(
@@ -464,8 +581,7 @@ await pool.query(
 
       res.status(500).json({
         success: false,
-        message:
-          "Failed to update payment",
+        message: "Failed to update payment",
       });
     }
   }
