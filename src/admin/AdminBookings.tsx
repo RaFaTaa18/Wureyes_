@@ -263,6 +263,18 @@ setReceiptBooking((current) => {
   setAdditionalFees(feeAmounts);
   setAdditionalFeeDescriptions(feeDescriptions);
 
+  console.log(
+  "BIAYA TAMBAHAN DARI API:",
+  result.data.find(
+    (booking: Booking) => booking.id === 3
+  )
+);
+
+console.log(
+  "STATE BIAYA TAMBAHAN:",
+  feeAmounts[3]
+);
+
       } catch (error) {
         setError(
           error instanceof Error
