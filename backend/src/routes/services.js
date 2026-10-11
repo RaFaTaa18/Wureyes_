@@ -1,4 +1,7 @@
 import express from "express";
+import fs from "fs";
+import path from "path";
+import serviceUpload from "../middlware/serviceUpload.js";
 import pool from "../db.js";
 
 import {
@@ -7,6 +10,53 @@ import {
 } from "../middlware/auth.js";
 
 const router = express.Router();
+const uploadDirectory = path.join(
+  process.cwd(),
+  "uploads",
+  "services"
+);
+
+function deleteServiceImage(imageUrl) {
+  if (
+    !imageUrl ||
+    !imageUrl.startsWith("/uploads/services/")
+  ) {
+    return;
+  }
+
+  const filename = path.basename(imageUrl);
+  const filePath = path.join(uploadDirectory, filename);
+
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+  }
+}
+
+function handleServiceUpload(req, res, next) {
+  serviceUpload.single("image")(req, res, (error) => {
+    if (error) {
+      const message =
+        error.code === "LIMIT_FILE_SIZE"
+          ? "Ukuran gambar maksimal 5 MB."
+          : error.message;
+
+      return res.status(400).json({
+        success: false,
+        message,
+      });
+    }
+
+    next();
+  });
+}
+
+function parseBoolean(value, defaultValue = true) {
+  if (value === undefined || value === null || value === "") {
+    return defaultValue;
+  }
+
+  return value === true || value === "true" || value === 1 || value === "1";
+}
 
 
 // =====================================================
@@ -59,54 +109,59 @@ router.post(
   "/",
   authenticateToken,
   requireAdmin,
+  handleServiceUpload,
   async (req, res) => {
 
     try {
+  const {
+    name,
+    slug,
+    description,
+    price,
+    image_url,
+    is_active,
+  } = req.body;
 
-      const {
-        name,
-        slug,
-        description,
-        price,
-        image_url,
-        is_active,
-      } = req.body;
+  if (!name || !slug) {
+    if (req.file) {
+      deleteServiceImage(
+        `/uploads/services/${req.file.filename}`
+      );
+    }
+
+    return res.status(400).json({
+      success: false,
+      message: "name and slug are required",
+    });
+  }
 
 
-      if (!name || !slug) {
-
-        return res.status(400).json({
-          success: false,
-          message:
-            "name and slug are required",
-        });
-
-      }
-
-
+      
       // Check duplicate slug
-
-      const [existing] =
-        await pool.query(
-          `
-          SELECT id
-          FROM services
-          WHERE slug = ?
-          LIMIT 1
-          `,
-          [slug]
-        );
-
+      const [existing] = await pool.query(
+        `
+        SELECT id
+        FROM services
+        WHERE slug = ?
+        LIMIT 1
+        `,
+        [slug]
+      );
 
       if (existing.length > 0) {
+        // Hapus gambar baru jika slug sudah digunakan
+        if (req.file) {
+          deleteServiceImage(
+            `/uploads/services/${req.file.filename}`
+          );
+        }
 
         return res.status(409).json({
           success: false,
-          message:
-            "Service slug already exists",
+          message: "Service slug already exists",
         });
-
       }
+
 
 
       const [result] =
@@ -132,10 +187,10 @@ router.post(
             price !== ""
               ? Number(price)
               : null,
-            image_url || null,
-            is_active !== undefined
-              ? Boolean(is_active)
-              : true,
+            req.file
+  ? `/uploads/services/${req.file.filename}`
+  : image_url || null,
+            parseBoolean(is_active),
           ]
         );
 
@@ -155,6 +210,12 @@ router.post(
         "Create service error:",
         error
       );
+
+      if (req.file) {
+  deleteServiceImage(
+    `/uploads/services/${req.file.filename}`
+  );
+}
 
       res.status(500).json({
         success: false,
@@ -176,6 +237,7 @@ router.put(
   "/:id",
   authenticateToken,
   requireAdmin,
+  handleServiceUpload,
   async (req, res) => {
 
     try {
@@ -192,40 +254,49 @@ router.put(
       } = req.body;
 
 
-      if (!name || !slug) {
+      
+if (!name || !slug) {
+  if (req.file) {
+    deleteServiceImage(
+      `/uploads/services/${req.file.filename}`
+    );
+  }
 
-        return res.status(400).json({
-          success: false,
-          message:
-            "name and slug are required",
-        });
-
-      }
+  return res.status(400).json({
+    success: false,
+    message: "name and slug are required",
+  });
+}
 
 
+
+      
       // Check service exists
-
-      const [existingService] =
-        await pool.query(
-          `
-          SELECT id
-          FROM services
-          WHERE id = ?
-          LIMIT 1
-          `,
-          [id]
-        );
-
+      const [existingService] = await pool.query(
+        `
+        SELECT id, image_url
+        FROM services
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [id]
+      );
 
       if (existingService.length === 0) {
+        if (req.file) {
+          deleteServiceImage(
+            `/uploads/services/${req.file.filename}`
+          );
+        }
 
         return res.status(404).json({
           success: false,
-          message:
-            "Service not found",
+          message: "Service not found",
         });
-
       }
+
+      const oldImageUrl = existingService[0].image_url;
+
 
 
       // Check duplicate slug
@@ -245,6 +316,11 @@ router.put(
 
 
       if (duplicateSlug.length > 0) {
+  if (req.file) {
+    deleteServiceImage(
+      `/uploads/services/${req.file.filename}`
+    );
+  }
 
         return res.status(409).json({
           success: false,
@@ -276,19 +352,23 @@ router.put(
           price !== ""
             ? Number(price)
             : null,
-          image_url || null,
-          is_active !== undefined
-            ? Boolean(is_active)
-            : true,
+          req.file
+  ? `/uploads/services/${req.file.filename}`
+  : image_url || oldImageUrl || null, 
+          parseBoolean(is_active),
           id,
         ]
       );
 
 
-      res.json({
+      // Hapus gambar lama setelah gambar baru berhasil disimpan
+      if (req.file) {
+        deleteServiceImage(oldImageUrl);
+      }
+
+      return res.json({
         success: true,
-        message:
-          "Service updated successfully",
+        message: "Service updated successfully",
       });
 
     } catch (error) {
@@ -297,6 +377,12 @@ router.put(
         "Update service error:",
         error
       );
+
+      if (req.file) {
+  deleteServiceImage(
+    `/uploads/services/${req.file.filename}`
+  );
+}
 
       res.status(500).json({
         success: false,
