@@ -26,6 +26,8 @@ export default function Contact() {
     message: "",
   });
 
+  const [submitting, setSubmitting] = useState(false);
+
   const handleChange = (
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -37,40 +39,94 @@ export default function Contact() {
     }));
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  
+const handleSubmit = async (
+  event: FormEvent<HTMLFormElement>
+) => {
+  event.preventDefault();
 
-    const { name, email, subject, message } = form;
+  const { name, email, subject, message } = form;
 
-    const whatsappMessage = [
-      "Halo Wureyes! Saya ingin menghubungi Anda melalui website.",
-      "",
-      `Nama: ${name.trim()}`,
-      `Email: ${email.trim()}`,
-      `Subject: ${subject.trim() || "-"}`,
-      "",
-      "Pesan:",
-      message.trim(),
-      "",
-      "Dikirim melalui website Wureyes.",
-    ].join("\n");
+  const whatsappMessage = [
+    "Halo Wureyes! Saya ingin menghubungi Anda melalui website.",
+    "",
+    `Nama: ${name.trim()}`,
+    `Email: ${email.trim()}`,
+    `Subject: ${subject.trim() || "-"}`,
+    "",
+    "Pesan:",
+    message.trim(),
+    "",
+    "Dikirim melalui website Wureyes.",
+  ].join("\n");
 
-    const whatsappURL =
-      `https://wa.me/6282183378241?text=${encodeURIComponent(
-        whatsappMessage
-      )}`;
+  const whatsappURL =
+    `https://wa.me/6282183378241?text=${encodeURIComponent(
+      whatsappMessage
+    )}`;
 
-    window.open(
-      whatsappURL,
-      "_blank",
-      "noopener,noreferrer"
+  // Siapkan tab WhatsApp sebelum proses penyimpanan.
+  const whatsappWindow = window.open("about:blank", "_blank");
+
+  setSubmitting(true);
+  setStatus({ type: "", message: "" });
+
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL || ""}/api/messages`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          subject: subject.trim(),
+          message: message.trim(),
+        }),
+      }
     );
+
+    if (!response.ok) {
+      throw new Error(
+        "Pesan gagal disimpan ke database. Silakan coba lagi."
+      );
+    }
+
+    if (whatsappWindow) {
+      whatsappWindow.location.href = whatsappURL;
+    } else {
+      window.location.href = whatsappURL;
+    }
 
     setStatus({
       type: "success",
-      message: "WhatsApp opened. Please send your message there.",
+      message:
+        "Pesan berhasil disimpan. Silakan kirim melalui WhatsApp.",
     });
-  };
+
+    setForm({
+      name: "",
+      email: "",
+      subject: "",
+      message: "",
+    });
+  } catch (error) {
+    whatsappWindow?.close();
+
+    setStatus({
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan. Silakan coba lagi.",
+    });
+  } finally {
+    setSubmitting(false);
+  }
+};
+
 
   return (
     <section id="contact" className="contact-section">
@@ -182,12 +238,15 @@ export default function Contact() {
             </div>
           )}
 
-          <button
-            type="submit"
-            className="contact-submit"
-          >
-            Send Message →
-          </button>
+          
+<button
+  type="submit"
+  className="contact-submit"
+  disabled={submitting}
+>
+  {submitting ? "Sending..." : "Send Message →"}
+</button>
+
         </form>
       </div>
     </section>
