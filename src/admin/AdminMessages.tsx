@@ -304,21 +304,21 @@ export default function AdminMessages() {
                 )}
 
 
-                {message.status === "read" && (
-                  <a
-                    href={`mailto:${message.email}?subject=Re: ${
-                      message.subject || "Your message"
-                    }`}
-                    onClick={() =>
-                      updateStatus(
-                        message.id,
-                        "replied"
-                      )
-                    }
-                  >
-                    Reply
-                  </a>
-                )}
+                
+{message.status !== "replied" && (
+  <button
+    type="button"
+    onClick={() =>
+      updateStatus(
+        message.id,
+        "replied"
+      )
+    }
+  >
+    Mark as Replied
+  </button>
+)}
+
 
               </div>
 
