@@ -44,21 +44,8 @@ export default function Services() {
         <div className="services-grid">
           {services.map((service) => (
             
-<article className="service-card" key={service.id}>
-  {service.image_url && (
-    <div className="service-image">
-      <img
-        src={service.image_url}
-        alt={service.name}
-        loading="lazy"
-        onError={(event) => {
-          event.currentTarget.style.display = "none";
-        }}
-      />
-    </div>
-  )}
-
-  <div className="service-number">
+            <article className="service-card" key={service.id}>
+              <div className="service-number">
     {String(service.id).padStart(2, "0")}
   </div>
 
