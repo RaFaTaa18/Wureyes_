@@ -4,75 +4,75 @@ import "./Terms.css";
 const termsSections = [
   {
     number: "01",
-    title: "Booking & Reservation",
+    title: "Pemesanan & Reservasi",
     content:
-      "A booking is considered confirmed after the client has provided the required booking information and completed the required payment or deposit. Booking availability is based on a first-confirmed basis.",
+      "Pemesanan dianggap terkonfirmasi setelah klien memberikan informasi pemesanan yang diperlukan dan menyelesaikan pembayaran atau uang muka yang dipersyaratkan. Ketersediaan jadwal mengikuti urutan pemesanan yang telah dikonfirmasi.",
   },
   {
     number: "02",
-    title: "Payment",
+    title: "Pembayaran",
     content:
-      "The total service fee follows the price agreed upon at the time of booking. A deposit may be required to secure the booking date. Additional costs outside the agreed service package may be charged separately.",
+      "Total biaya layanan mengikuti harga yang telah disepakati saat pemesanan. Uang muka dapat diwajibkan untuk mengamankan tanggal pemesanan. Biaya tambahan di luar paket layanan yang telah disepakati dapat dikenakan secara terpisah.",
   },
   {
     number: "03",
-    title: "Schedule & Punctuality",
+    title: "Jadwal & Ketepatan Waktu",
     content:
-      "Clients are expected to arrive at the agreed location and time. Late arrival may reduce the available shooting time and does not automatically extend the scheduled session.",
+      "Klien diharapkan tiba di lokasi pada waktu yang telah disepakati. Keterlambatan dapat mengurangi waktu pemotretan yang tersedia dan tidak secara otomatis memperpanjang durasi sesi yang telah dijadwalkan.",
   },
   {
     number: "04",
-    title: "Rescheduling",
+    title: "Penjadwalan Ulang",
     content:
-      "Rescheduling requests must be communicated as early as possible. A new date is subject to Wureyes' availability. Repeated or last-minute rescheduling may result in additional charges or loss of the booking deposit.",
+      "Permintaan perubahan jadwal harus disampaikan sedini mungkin. Tanggal pengganti bergantung pada ketersediaan jadwal Wureyes. Perubahan jadwal yang berulang atau dilakukan mendadak dapat dikenakan biaya tambahan atau mengakibatkan uang muka pemesanan hangus.",
   },
   {
     number: "05",
-    title: "Cancellation & Refund",
+    title: "Pembatalan & Pengembalian Dana",
     content:
-      "Cancellation policies depend on the service and booking agreement. Deposits or booking fees may be non-refundable when they have been used to secure the production date.",
+      "Ketentuan pembatalan bergantung pada jenis layanan dan kesepakatan pemesanan. Uang muka atau biaya pemesanan mungkin tidak dapat dikembalikan apabila telah digunakan untuk mengamankan tanggal produksi.",
   },
   {
     number: "06",
-    title: "Photo & Video Delivery",
+    title: "Penyerahan Foto & Video",
     content:
-      "Final photos and videos will be delivered through the agreed digital delivery method. Delivery time depends on the type and scope of the service and will be communicated after the production session.",
+      "Foto dan video final akan diserahkan melalui metode pengiriman digital yang telah disepakati. Waktu penyerahan bergantung pada jenis dan cakupan layanan, serta akan diinformasikan setelah sesi produksi.",
   },
   {
     number: "07",
-    title: "Editing & Revision",
+    title: "Penyuntingan & Revisi",
     content:
-      "Editing is performed according to the visual direction agreed upon before production. Minor revisions may be provided according to the selected service package. Major changes may incur additional charges.",
+      "Penyuntingan dilakukan sesuai arahan visual yang telah disepakati sebelum produksi. Revisi ringan dapat diberikan sesuai paket layanan yang dipilih. Perubahan besar dapat dikenakan biaya tambahan.",
   },
   {
     number: "08",
-    title: "Client Responsibilities",
+    title: "Tanggung Jawab Klien",
     content:
-      "Clients are responsible for providing accurate information regarding the date, time, location, number of participants, special requests, references, and other information relevant to the production.",
+      "Klien bertanggung jawab memberikan informasi yang akurat mengenai tanggal, waktu, lokasi, jumlah peserta, permintaan khusus, referensi, serta informasi lain yang relevan dengan proses produksi.",
   },
   {
     number: "09",
-    title: "Copyright & Portfolio",
+    title: "Hak Cipta & Portofolio",
     content:
-      "Unless otherwise agreed in writing, Wureyes retains the copyright and intellectual property rights to the photographs, videos, and creative materials produced. Wureyes may use selected work for portfolio, website, and social media purposes unless confidentiality has been requested.",
+      "Kecuali disepakati lain secara tertulis, Wureyes tetap memegang hak cipta dan hak kekayaan intelektual atas foto, video, serta materi kreatif yang dihasilkan. Wureyes dapat menggunakan karya tertentu untuk portofolio, situs web, dan media sosial, kecuali klien telah meminta agar karya tersebut dirahasiakan.",
   },
   {
     number: "10",
-    title: "Raw Files",
+    title: "Berkas Mentah",
     content:
-      "RAW or unedited files are not included in standard service packages unless explicitly stated in the service agreement. Requests for RAW files may be considered separately.",
+      "Berkas RAW atau berkas yang belum disunting tidak termasuk dalam paket layanan standar, kecuali dinyatakan secara jelas dalam kesepakatan layanan. Permintaan berkas RAW dapat dipertimbangkan secara terpisah.",
   },
   {
     number: "11",
-    title: "Data & Privacy",
+    title: "Data & Privasi",
     content:
-      "Client information provided to Wureyes will be used for booking, communication, service delivery, administration, and other purposes directly related to the service.",
+      "Informasi klien yang diberikan kepada Wureyes akan digunakan untuk keperluan pemesanan, komunikasi, penyediaan layanan, administrasi, serta tujuan lain yang berkaitan langsung dengan layanan.",
   },
   {
     number: "12",
-    title: "Force Majeure",
+    title: "Keadaan Kahar",
     content:
-      "Wureyes and the client will not be considered in breach of these terms when circumstances beyond reasonable control prevent the service from being performed. Both parties will make reasonable efforts to find an alternative solution.",
+      "Wureyes maupun klien tidak dianggap melanggar ketentuan ini apabila keadaan di luar kendali yang wajar menghalangi pelaksanaan layanan. Kedua belah pihak akan berupaya secara wajar untuk menemukan solusi alternatif.",
   },
 ];
 
@@ -87,39 +87,38 @@ export default function Terms() {
     <main className="terms-page">
       <section className="terms-hero">
         <a href="/" className="terms-back">
-          ← Back to Wureyes
+          ← Kembali ke Wureyes
         </a>
 
         <div className="terms-hero-content">
-          <p className="terms-eyebrow">WUREYES_ / INFORMATION</p>
+          <p className="terms-eyebrow">WUREYES_ / INFORMASI</p>
 
           <h1>
-            Terms
+            Syarat
             <br />
-            <span>& Conditions.</span>
+            <span>& Ketentuan.</span>
           </h1>
 
           <p className="terms-intro">
-            Please take a moment to read our terms before
-            booking a Wureyes service.
+            Luangkan waktu sejenak untuk membaca ketentuan kami sebelum
+            memesan layanan Wureyes.
           </p>
         </div>
       </section>
 
       <section className="terms-content">
         <div className="terms-heading">
-          <p>01 — TERMS OF SERVICE</p>
+          <p>01 — KETENTUAN LAYANAN</p>
 
           <h2>
-            Clear terms.
+            Ketentuan jelas.
             <br />
-            Better experience.
+            Pengalaman lebih baik.
           </h2>
 
           <p>
-            These terms are designed to keep every project
-            comfortable, transparent, and professional for
-            both Wureyes and our clients.
+            Ketentuan ini dibuat agar setiap proyek berjalan dengan nyaman,
+            transparan, dan profesional bagi Wureyes maupun klien.
           </p>
         </div>
 
@@ -168,13 +167,13 @@ export default function Terms() {
         <p className="terms-eyebrow">WUREYES_</p>
 
         <h2>
-          By booking with Wureyes,
+          Dengan memesan layanan Wureyes,
           <br />
-          you agree to these terms.
+          Anda menyetujui ketentuan ini.
         </h2>
 
         <a href="/#booking" className="terms-button">
-          Book a Session →
+          Pesan Sesi →
         </a>
       </section>
     </main>
