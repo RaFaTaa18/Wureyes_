@@ -52,7 +52,7 @@ const handleSubmit = async (
     "",
     `Nama: ${name.trim()}`,
     `Email: ${email.trim()}`,
-    `Subject: ${subject.trim() || "-"}`,
+    `Subjek: ${subject.trim() || "-"}`,
     "",
     "Pesan:",
     message.trim(),
@@ -132,17 +132,16 @@ const handleSubmit = async (
     <section id="contact" className="contact-section">
       <div className="contact-container">
         <div className="contact-heading">
-          <p className="contact-label">GET IN TOUCH</p>
+          <p className="contact-label">HUBUNGI KAMI</p>
 
           <h2>
-            Let's create
+            Mari ciptakan
             <br />
-            <span>something.</span>
+            <span>sesuatu.</span>
           </h2>
 
           <p className="contact-description">
-            Have a project in mind, want to collaborate,
-            or simply want to say hello? Send us a message.
+            Punya proyek yang ingin diwujudkan, ingin berkolaborasi, atau sekadar ingin menyapa? Kirimkan pesan kepada kami.
           </p>
 
           <div className="contact-details">
@@ -182,12 +181,12 @@ const handleSubmit = async (
           onSubmit={handleSubmit}
         >
           <div className="form-group">
-            <label htmlFor="name">Name *</label>
+            <label htmlFor="name">Nama *</label>
             <input
               id="name"
               name="name"
               type="text"
-              placeholder="Your name"
+              placeholder="Nama Anda"
               value={form.name}
               onChange={handleChange}
               required
@@ -208,24 +207,24 @@ const handleSubmit = async (
           </div>
 
           <div className="form-group">
-            <label htmlFor="subject">Subject</label>
+            <label htmlFor="subject">Subjek</label>
             <input
               id="subject"
               name="subject"
               type="text"
-              placeholder="What's this about?"
+              placeholder="Apa topik pesan Anda?"
               value={form.subject}
               onChange={handleChange}
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="message">Message *</label>
+            <label htmlFor="message">Pesan *</label>
             <textarea
               id="message"
               name="message"
               rows={7}
-              placeholder="Tell us what you have in mind..."
+              placeholder="Ceritakan hal yang ingin Anda sampaikan..."
               value={form.message}
               onChange={handleChange}
               required
@@ -244,7 +243,7 @@ const handleSubmit = async (
   className="contact-submit"
   disabled={submitting}
 >
-  {submitting ? "Sending..." : "Send Message →"}
+  {submitting ? "Mengirim..." : "Kirim Pesan →"}
 </button>
 
         </form>
