@@ -84,7 +84,7 @@ export default function Booking() {
     if (!form.service_id) {
       setStatus({
         type: "error",
-        message: "Please select a service.",
+        message: "Silakan pilih layanan.",
       });
 
       return;
@@ -94,7 +94,7 @@ export default function Booking() {
   setStatus({
     type: "error",
     message:
-      "Please agree to the Terms & Conditions before submitting your booking.",
+      "Silakan setujui Syarat & Ketentuan sebelum mengirim permintaan booking.",
   });
 
   return;
@@ -121,7 +121,7 @@ export default function Booking() {
 
       if (!response.ok || !result.success) {
         throw new Error(
-          result.message || "Failed to submit booking."
+          result.message || "Gagal mengirim permintaan booking."
         );
       }
 
@@ -131,16 +131,16 @@ export default function Booking() {
 
       const whatsappMessage = `Halo Wureyes, saya ingin mengonfirmasi booking saya.
 
-*Booking Details*
+*Detail Booking*
 Nama: ${form.client_name}
 Email: ${form.email}
 WhatsApp: ${form.phone}
-Service: ${selectedService?.name || "-"}
-Tanggal Event: ${form.event_date}
+Layanan: ${selectedService?.name || "-"}
+Tanggal Acara: ${form.event_date}
 Lokasi: ${form.location || "-"}
-Detail Project: ${form.message || "-"}
+Detail Proyek: ${form.message || "-"}
 
-Mohon konfirmasi, apakah untuk tanggal ${form.event_date} tersebut masih available untuk booking?
+Mohon konfirmasi, apakah untuk tanggal ${form.event_date} tersebut masih tersedia untuk booking?
 
 Terima kasih.`;
 
@@ -157,7 +157,7 @@ Terima kasih.`;
         message:
           error instanceof Error
             ? error.message
-            : "Something went wrong. Please try again.",
+            : "Terjadi kesalahan. Silakan coba lagi.",
       });
     } finally {
       setSubmitting(false);
@@ -170,38 +170,36 @@ Terima kasih.`;
     <section id="booking" className="booking-section">
       <div className="booking-container">
         <div className="booking-intro">
-          <p className="booking-label">LET'S WORK TOGETHER</p>
+          <p className="booking-label">MARI BERKOLABORASI</p>
 
           <h2>
-            Book your
+            Pesan
             <br />
-            <span>session.</span>
+            <span>Sesi Anda.</span>
           </h2>
 
           <p className="booking-description">
-            Tell us about your project, event, or special
-            moment. We'll get back to you to discuss the
-            details.
+            Ceritakan proyek, acara, atau momen spesial Anda. Kami akan menghubungi Anda untuk membahas detailnya.
           </p>
 
           <div className="booking-note">
             <span>01</span>
             <p>
-              Fill out the form with your event details.
+              Isi formulir dengan detail acara Anda.
             </p>
           </div>
 
           <div className="booking-note">
             <span>02</span>
             <p>
-              We'll review your request and contact you.
+              Kami akan meninjau permintaan Anda dan menghubungi Anda.
             </p>
           </div>
 
           <div className="booking-note">
             <span>03</span>
             <p>
-              Finalize the details and make it happen.
+              Mari finalisasi detailnya dan wujudkan momen Anda.
             </p>
           </div>
         </div>
@@ -209,13 +207,13 @@ Terima kasih.`;
         <form className="booking-form" onSubmit={handleSubmit}>
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="client_name">Name *</label>
+              <label htmlFor="client_name">Nama *</label>
 
               <input
                 id="client_name"
                 name="client_name"
                 type="text"
-                placeholder="Your name"
+                placeholder="Nama lengkap Anda"
                 value={form.client_name}
                 onChange={handleChange}
                 required
@@ -239,7 +237,7 @@ Terima kasih.`;
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="phone">Phone / WhatsApp *</label>
+              <label htmlFor="phone">Nomor Telepon / WhatsApp *</label>
 
               <input
                 id="phone"
@@ -253,7 +251,7 @@ Terima kasih.`;
             </div>
 
             <div className="form-group">
-              <label htmlFor="service_id">Service *</label>
+              <label htmlFor="service_id">Layanan *</label>
 
               <select
                 id="service_id"
@@ -264,8 +262,8 @@ Terima kasih.`;
               >
                 <option value="">
                   {loadingServices
-                    ? "Loading services..."
-                    : "Select a service"}
+                    ? "Memuat layanan..."
+                    : "Pilih layanan"}
                 </option>
 
                 {services.map((service) => (
@@ -282,7 +280,7 @@ Terima kasih.`;
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="event_date">Event Date *</label>
+              <label htmlFor="event_date">Tanggal Acara *</label>
 
               <input
                 id="event_date"
@@ -296,13 +294,13 @@ Terima kasih.`;
             </div>
 
             <div className="form-group">
-              <label htmlFor="location">Location</label>
+              <label htmlFor="location">Lokasi</label>
 
               <input
                 id="location"
                 name="location"
                 type="text"
-                placeholder="Event location"
+                placeholder="Lokasi acara"
                 value={form.location}
                 onChange={handleChange}
               />
@@ -310,13 +308,13 @@ Terima kasih.`;
           </div>
 
           <div className="form-group">
-            <label htmlFor="message">Tell us about your project</label>
+            <label htmlFor="message">Ceritakan tentang proyek atau acara Anda</label>
 
             <textarea
               id="message"
               name="message"
               rows={6}
-              placeholder="Tell us about your event, concept, location, estimated duration, or anything else we should know..."
+              placeholder="Ceritakan acara, konsep, lokasi, perkiraan durasi, atau hal lain yang perlu kami ketahui..."
               value={form.message}
               onChange={handleChange}
             />
@@ -341,7 +339,7 @@ Terima kasih.`;
         target="_blank"
         rel="noreferrer"
       >
-        Terms & Conditions
+        Syarat & Ketentuan
       </a>
       {" "}of Wureyes.
     </span>
@@ -362,8 +360,8 @@ Terima kasih.`;
             disabled={submitting}
           >
             {submitting
-              ? "Sending Request..."
-              : "Send Booking Request →"}
+              ? "Mengirim Permintaan..."
+              : "Kirim Permintaan Booking →"}
           </button>
         </form>
       </div>
