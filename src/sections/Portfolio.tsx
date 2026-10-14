@@ -146,12 +146,13 @@ export default function Portfolio() {
             aria-label="Portfolio carousel. Swipe or use the arrows to browse projects."
           >
             <div
-              className="portfolio-carousel-stage"
+              className={`portfolio-carousel-stage${pointerStartX.current !== null ? " is-dragging" : ""}`}
+              style={{ "--drag-offset": `${dragX}px` } as React.CSSProperties}
               onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
-              onPointerCancel={() => {
-                pointerStartX.current = null;
-              }}
+              onPointerCancel={handlePointerCancel}
+              onLostPointerCapture={handlePointerCancel}
             >
               {portfolio.map((item, index) => {
                 const offset = getOffset(index);
