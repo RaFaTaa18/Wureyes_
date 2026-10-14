@@ -3,7 +3,7 @@ import "./Hero.css";
 export default function Hero() {
   return (
     <section id="home" className="hero">
-      <div className="hero-overlay"></div>
+      <div className="hero-overlay" aria-hidden="true" />
 
       <div className="hero-content">
         <p className="hero-label">
@@ -30,6 +30,41 @@ export default function Hero() {
             Book a Session
           </a>
         </div>
+      </div>
+
+      <div className="hero-visual" aria-label="Selected Wureyes photography portfolio">
+        <div className="hero-visual-orbit" aria-hidden="true" />
+
+        <div className="hero-device hero-device-center">
+          <img
+            src="/wureyes-hero-center.webp"
+            alt="Wisudawati berjalan di area gedung kampus"
+            fetchPriority="high"
+          />
+        </div>
+
+        <div className="hero-device hero-device-left">
+          <img
+            src="/wureyes-hero-phone-left.webp"
+            alt="Detail selempang wisuda"
+            fetchPriority="high"
+          />
+        </div>
+
+        <div className="hero-device hero-device-right">
+          <img
+            src="/wureyes-hero-phone-right.webp"
+            alt="Momen pasangan wisudawan dan wisudawati"
+            fetchPriority="high"
+          />
+        </div>
+
+        <p className="hero-handwriting hero-note-top" aria-hidden="true">
+          Moments<br />People<br />Stories
+        </p>
+        <p className="hero-handwriting hero-note-bottom" aria-hidden="true">
+          Captured with<br />Ur Eyes
+        </p>
       </div>
     </section>
   );
