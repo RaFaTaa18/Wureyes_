@@ -4,14 +4,13 @@
   left: 0;
   right: 0;
   z-index: 1000;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   padding: 22px 6%;
   background: rgba(15, 15, 15, 0.82);
   backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .navbar-logo {
@@ -28,36 +27,90 @@
 
 .navbar-menu {
   display: flex;
-  gap: 32px;
+  align-items: center;
+  gap: 12px;
 }
 
 .navbar-menu a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border: 1px solid transparent;
+  border-radius: 999px;
   color: #ffffff;
   text-decoration: none;
   font-size: 0.9rem;
   opacity: 0.8;
-  transition: 0.3s;
+  background: transparent;
+  transition:
+    opacity 220ms ease,
+    background-color 260ms ease,
+    border-color 260ms ease,
+    box-shadow 260ms ease,
+    transform 260ms ease;
 }
 
 .navbar-menu a:hover {
   opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.navbar-menu a:active {
+  transform: scale(0.96);
+}
+
+.navbar-menu a.is-active {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.32);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 4px 18px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.navbar-menu a:focus-visible,
+.navbar-button:focus-visible,
+.navbar-logo:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 4px;
 }
 
 .navbar-button {
   padding: 11px 20px;
   border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 999px;
-
   color: #ffffff;
   text-decoration: none;
   font-size: 0.85rem;
-
-  transition: 0.3s;
+  transition: background-color 0.3s, color 0.3s;
 }
 
 .navbar-button:hover {
   background: #ffffff;
   color: #111111;
+}
+
+@media (max-width: 1000px) {
+  .navbar {
+    padding-left: 4%;
+    padding-right: 4%;
+  }
+
+  .navbar-menu {
+    gap: 4px;
+  }
+
+  .navbar-menu a {
+    padding: 9px 10px;
+    font-size: 0.82rem;
+  }
 }
 
 @media (max-width: 768px) {
@@ -67,5 +120,12 @@
 
   .navbar-button {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navbar-menu a,
+  .navbar-button {
+    transition: none;
   }
 }
