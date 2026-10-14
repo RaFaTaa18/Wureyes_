@@ -333,7 +333,7 @@ Terima kasih.`;
     <span className="booking-terms-check"></span>
 
     <span className="booking-terms-text">
-      I have read and agree to the{" "}
+      Saya telah membaca dan menyetujui{" "}
       <a
         href="/terms"
         target="_blank"
@@ -341,7 +341,7 @@ Terima kasih.`;
       >
         Syarat & Ketentuan
       </a>
-      {" "}of Wureyes.
+      {" "}Wureyes.
     </span>
   </label>
 </div>
