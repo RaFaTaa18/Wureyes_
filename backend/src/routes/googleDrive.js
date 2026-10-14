@@ -237,14 +237,20 @@ router.get(
       |--------------------------------------------------------------------------
       */
 
+      const thumbnailUrl =
+        metadata.thumbnailLink.replace(
+          /=s[0-9]+$/,
+          "=s1600"
+        );
+
       console.log(
-        "Thumbnail URL:",
-        metadata.thumbnailLink
+        "Thumbnail HD URL:",
+        thumbnailUrl
       );
 
       const imageResponse =
         await fetch(
-          metadata.thumbnailLink
+          thumbnailUrl
         );
 
       /*
