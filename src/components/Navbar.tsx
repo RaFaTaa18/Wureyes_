@@ -1,18 +1,50 @@
+import { useEffect, useState } from "react";
 import "./Navbar.css";
 
+const navigationItems = [
+  { label: "Home", href: "#home" },
+  { label: "About", href: "#about" },
+  { label: "Services", href: "#services" },
+  { label: "Portfolio", href: "#portfolio" },
+  { label: "Contact", href: "#contact" },
+];
+
 export default function Navbar() {
+  const [activeHref, setActiveHref] = useState(
+    typeof window !== "undefined" ? window.location.hash || "#home" : "#home"
+  );
+
+  useEffect(() => {
+    const syncActiveLink = () => {
+      setActiveHref(window.location.hash || "#home");
+    };
+
+    window.addEventListener("hashchange", syncActiveLink);
+    return () => window.removeEventListener("hashchange", syncActiveLink);
+  }, []);
+
   return (
     <header className="navbar">
-      <a href="#" className="navbar-logo">
+      <a
+        href="#home"
+        className="navbar-logo"
+        onClick={() => setActiveHref("#home")}
+      >
         WUREYES<span>_</span>
       </a>
 
-      <nav className="navbar-menu">
-        <a href="#home">Home</a>
-        <a href="#about">About</a>
-        <a href="#services">Services</a>
-        <a href="#portfolio">Portfolio</a>
-        <a href="#contact">Contact</a>
+      <nav className="navbar-menu" aria-label="Navigasi utama">
+        {navigationItems.map((item) => (
+          <a
+            href={item.href}
+            key={item.href}
+            className={activeHref === item.href ? "is-active" : ""}
+            aria-current={activeHref === item.href ? "location" : undefined}
+            onClick={() => setActiveHref(item.href)}
+          >
+            {item.label}
+          </a>
+        ))}
       </nav>
 
       <a href="#booking" className="navbar-button">
