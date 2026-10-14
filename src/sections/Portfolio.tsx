@@ -21,6 +21,8 @@ export default function Portfolio() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const pointerStartX = useRef<number | null>(null);
+  const suppressSlideClick = useRef(false);
+  const [dragX, setDragX] = useState(0);
 
   const loadPortfolio = async () => {
     try {
@@ -78,7 +80,21 @@ export default function Portfolio() {
   };
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
     pointerStartX.current = event.clientX;
+    suppressSlideClick.current = false;
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (pointerStartX.current === null) return;
+
+    const distance = event.clientX - pointerStartX.current;
+    setDragX(distance);
+
+    if (Math.abs(distance) > 8) {
+      suppressSlideClick.current = true;
+    }
   };
 
   const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -86,10 +102,16 @@ export default function Portfolio() {
 
     const distance = event.clientX - pointerStartX.current;
     pointerStartX.current = null;
+    setDragX(0);
 
     if (Math.abs(distance) > 45) {
       goTo(activeIndex + (distance < 0 ? 1 : -1));
     }
+  };
+
+  const handlePointerCancel = () => {
+    pointerStartX.current = null;
+    setDragX(0);
   };
 
   const activeItem = portfolio[activeIndex];
@@ -144,7 +166,13 @@ export default function Portfolio() {
                       "--slide-offset": offset,
                       "--slide-distance": Math.abs(offset),
                     } as React.CSSProperties}
-                    onClick={() => goTo(index)}
+                    onClick={() => {
+                      if (suppressSlideClick.current) {
+                        suppressSlideClick.current = false;
+                        return;
+                      }
+                      goTo(index);
+                    }}
                     aria-label={`Show ${item.title}`}
                     aria-current={isActive ? "true" : undefined}
                     tabIndex={Math.abs(offset) > 2 ? -1 : 0}
