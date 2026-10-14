@@ -2668,18 +2668,17 @@ const amount =
                           <div className="selection-photo-image">
 
                             <img
-                              src={`${API_URL}/api/google-drive/thumbnail/${photo.file_id}`}
-                              alt={
-                                photo.file_name
-                              }
-                              loading="lazy"
-                              onError={() =>
-                                console.error(
-                                  "Thumbnail proxy gagal:",
-                                  photo.file_name
-                                )
-                              }
-                            />
+  src={`${API_URL}/api/google-drive/thumbnail/${photo.file_id}`}
+  alt=""
+  loading="lazy"
+  onError={(event) => {
+    event.currentTarget.style.display = "none";
+    console.error(
+      "Thumbnail proxy gagal:",
+      photo.file_name
+    );
+  }}
+/>
 
                           </div>
 
