@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./Portfolio.css";
 
 interface PortfolioItem {
@@ -17,8 +17,10 @@ const API_URL = import.meta.env.VITE_API_URL || "";
 
 export default function Portfolio() {
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const pointerStartX = useRef<number | null>(null);
 
   const loadPortfolio = async () => {
     try {
@@ -28,26 +30,20 @@ export default function Portfolio() {
       const response = await fetch(`${API_URL}/api/portfolio`);
 
       if (!response.ok) {
-        throw new Error(
-          `Server returned ${response.status}`
-        );
+        throw new Error(`Server returned ${response.status}`);
       }
 
       const result = await response.json();
 
       if (!result.success) {
-        throw new Error(
-          result.message || "Failed to load portfolio"
-        );
+        throw new Error(result.message || "Failed to load portfolio");
       }
 
       setPortfolio(result.data || []);
+      setActiveIndex(0);
     } catch (error) {
       console.error("Failed to load portfolio:", error);
-
-      setError(
-        "Unable to load portfolio. Please try again later."
-      );
+      setError("Unable to load portfolio. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -58,27 +54,48 @@ export default function Portfolio() {
   }, []);
 
   const getImageUrl = (imageUrl: string) => {
-    if (!imageUrl) {
-      return "";
-    }
+    if (!imageUrl) return "";
 
-    // Jika sudah berupa URL lengkap
-    if (
-      imageUrl.startsWith("http://") ||
-      imageUrl.startsWith("https://")
-    ) {
+    if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
       return imageUrl;
     }
 
-    // Jika berasal dari backend
     return `${API_URL}${imageUrl}`;
   };
 
+  const goTo = (index: number) => {
+    if (portfolio.length === 0) return;
+    setActiveIndex((index + portfolio.length) % portfolio.length);
+  };
+
+  const getOffset = (index: number) => {
+    const count = portfolio.length;
+    if (count < 2) return 0;
+
+    let offset = (index - activeIndex + count) % count;
+    if (offset > count / 2) offset -= count;
+    return offset;
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    pointerStartX.current = event.clientX;
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (pointerStartX.current === null) return;
+
+    const distance = event.clientX - pointerStartX.current;
+    pointerStartX.current = null;
+
+    if (Math.abs(distance) > 45) {
+      goTo(activeIndex + (distance < 0 ? 1 : -1));
+    }
+  };
+
+  const activeItem = portfolio[activeIndex];
+
   return (
-    <section
-      id="portfolio"
-      className="portfolio-section"
-    >
+    <section id="portfolio" className="portfolio-section">
       <div className="portfolio-heading">
         <div>
           <p>SELECTED WORK</p>
@@ -86,15 +103,12 @@ export default function Portfolio() {
         </div>
 
         <p className="portfolio-intro">
-          A collection of moments, stories, and visual
-          experiences captured through our lens.
+          A collection of moments, stories, and visual experiences captured through our lens.
         </p>
       </div>
 
       {loading ? (
-        <p className="portfolio-loading">
-          Loading portfolio...
-        </p>
+        <p className="portfolio-loading">Loading portfolio...</p>
       ) : error ? (
         <div className="portfolio-empty">
           <p>{error}</p>
@@ -104,55 +118,103 @@ export default function Portfolio() {
           <p>Portfolio coming soon.</p>
         </div>
       ) : (
-        <div className="portfolio-grid">
-          {portfolio.map((item) => (
-            <article
-              className="portfolio-card"
-              key={item.id}
+        <>
+          <div
+            className="portfolio-carousel"
+            aria-label="Portfolio carousel. Swipe or use the arrows to browse projects."
+          >
+            <div
+              className="portfolio-carousel-stage"
+              onPointerDown={handlePointerDown}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={() => {
+                pointerStartX.current = null;
+              }}
             >
-              <div className="portfolio-image">
-                <img
-                  src={getImageUrl(item.image_url)}
-                  alt={item.title}
-                  loading="lazy"
-                  onError={(event) => {
-                    console.error(
-                      "Failed to load portfolio image:",
-                      getImageUrl(item.image_url)
-                    );
+              {portfolio.map((item, index) => {
+                const offset = getOffset(index);
+                const isActive = offset === 0;
 
-                    event.currentTarget.style.display =
-                      "none";
-                  }}
-                />
+                return (
+                  <button
+                    type="button"
+                    className={`portfolio-slide${isActive ? " is-active" : ""}`}
+                    key={item.id}
+                    style={{
+                      "--slide-offset": offset,
+                      "--slide-distance": Math.abs(offset),
+                    } as React.CSSProperties}
+                    onClick={() => goTo(index)}
+                    aria-label={`Show ${item.title}`}
+                    aria-current={isActive ? "true" : undefined}
+                    tabIndex={Math.abs(offset) > 2 ? -1 : 0}
+                  >
+                    <img
+                      src={getImageUrl(item.image_url)}
+                      alt={item.title}
+                      draggable={false}
+                      loading={Math.abs(offset) <= 1 ? "eager" : "lazy"}
+                      onError={(event) => {
+                        console.error(
+                          "Failed to load portfolio image:",
+                          getImageUrl(item.image_url)
+                        );
+                        event.currentTarget.style.visibility = "hidden";
+                      }}
+                    />
+                    <span className="portfolio-slide-shade" />
+                    <span className="portfolio-slide-category">
+                      {item.category_name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
 
-                <div className="portfolio-overlay">
-                  <span>
-                    {item.category_name}
-                  </span>
-                </div>
+            {portfolio.length > 1 && (
+              <div className="portfolio-carousel-controls">
+                <button
+                  type="button"
+                  className="portfolio-carousel-arrow"
+                  onClick={() => goTo(activeIndex - 1)}
+                  aria-label="Previous portfolio item"
+                >
+                  <span aria-hidden="true">←</span>
+                </button>
+                <span className="portfolio-carousel-count">
+                  {String(activeIndex + 1).padStart(2, "0")}
+                  <span aria-hidden="true"> / </span>
+                  {String(portfolio.length).padStart(2, "0")}
+                </span>
+                <button
+                  type="button"
+                  className="portfolio-carousel-arrow"
+                  onClick={() => goTo(activeIndex + 1)}
+                  aria-label="Next portfolio item"
+                >
+                  <span aria-hidden="true">→</span>
+                </button>
               </div>
+            )}
+          </div>
 
-              <div className="portfolio-info">
-                <div>
-                  <h3>{item.title}</h3>
-
-                  {item.description && (
-                    <p>{item.description}</p>
-                  )}
-                </div>
-
-                {item.project_date && (
-                  <span className="portfolio-date">
-                    {new Date(
-                      item.project_date
-                    ).getFullYear()}
-                  </span>
-                )}
+          {activeItem && (
+            <div className="portfolio-active-info" aria-live="polite">
+              <div>
+                <span className="portfolio-active-category">
+                  {activeItem.category_name}
+                </span>
+                <h3>{activeItem.title}</h3>
+                {activeItem.description && <p>{activeItem.description}</p>}
               </div>
-            </article>
-          ))}
-        </div>
+              {activeItem.project_date && (
+                <span className="portfolio-date">
+                  {new Date(activeItem.project_date).getFullYear()}
+                </span>
+              )}
+            </div>
+          )}
+        </>
       )}
     </section>
   );
