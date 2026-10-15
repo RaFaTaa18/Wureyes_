@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "./About.css";
+import { clearInputError, shakeInput } from "../utils/inputShake";
 
 interface Testimonial {
   id: number;
@@ -206,7 +207,13 @@ export default function About() {
             <span>Masukan kamu membantu client lain mengenal Wureyes_.</span>
           </div>
 
-          <form className="testimonial-form" onSubmit={submitTestimonial}>
+          <form
+            className="testimonial-form"
+            onSubmit={submitTestimonial}
+            onInvalidCapture={(event) => shakeInput(event.target)}
+            onInputCapture={(event) => clearInputError(event.target)}
+            onChangeCapture={(event) => clearInputError(event.target)}
+          >
             <div className="testimonial-form-row">
               <label>
                 Nama *
