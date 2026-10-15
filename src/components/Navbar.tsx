@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import "./Navbar.css";
 
 const navigationItems = [
@@ -23,6 +23,11 @@ export default function Navbar() {
     return () => window.removeEventListener("hashchange", syncActiveLink);
   }, []);
 
+  const activeIndex = Math.max(
+    0,
+    navigationItems.findIndex((item) => item.href === activeHref)
+  );
+
   return (
     <header className="navbar">
       <a
@@ -33,7 +38,12 @@ export default function Navbar() {
         WUREYES<span>_</span>
       </a>
 
-      <nav className="navbar-menu" aria-label="Navigasi utama">
+      <nav
+        className="navbar-menu"
+        aria-label="Navigasi utama"
+        style={{ "--active-index": activeIndex } as CSSProperties}
+      >
+        <span className="navbar-glider" aria-hidden="true" />
         {navigationItems.map((item) => (
           <a
             href={item.href}
