@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import "./Navbar.css";
 
 const navigationItems = [
@@ -41,7 +41,7 @@ export default function Navbar() {
       <nav
         className="navbar-menu"
         aria-label="Navigasi utama"
-        style={{ "--active-index": activeIndex } as React.CSSProperties}
+        style={{ "--active-index": activeIndex } as CSSProperties}
       >
         <span className="navbar-glider" aria-hidden="true" />
         {navigationItems.map((item) => (
