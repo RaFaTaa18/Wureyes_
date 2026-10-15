@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import "./Portfolio.css";
+import "../styles/cinematicReveal.css";
+import { useCinematicReveal } from "../hooks/useCinematicReveal";
 
 interface PortfolioItem {
   id: number;
@@ -16,6 +18,7 @@ interface PortfolioItem {
 const API_URL = import.meta.env.VITE_API_URL || "";
 
 export default function Portfolio() {
+  const sectionRef = useCinematicReveal<HTMLElement>();
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -117,8 +120,8 @@ export default function Portfolio() {
   const activeItem = portfolio[activeIndex];
 
   return (
-    <section id="portfolio" className="portfolio-section">
-      <div className="portfolio-heading">
+    <section id="portfolio" className="portfolio-section" ref={sectionRef}>
+      <div className="portfolio-heading" data-cinematic-stagger>
         <div>
           <p>SELECTED WORK</p>
           <h2>Portfolio</h2>
@@ -143,6 +146,7 @@ export default function Portfolio() {
         <>
           <div
             className="portfolio-carousel"
+            data-cinematic-reveal
             aria-label="Portfolio carousel. Swipe or use the arrows to browse projects."
           >
             <div
@@ -228,7 +232,7 @@ export default function Portfolio() {
           </div>
 
           {activeItem && (
-            <div className="portfolio-active-info" aria-live="polite">
+            <div className="portfolio-active-info" data-cinematic-reveal aria-live="polite">
               <div>
                 <span className="portfolio-active-category">
                   {activeItem.category_name}
