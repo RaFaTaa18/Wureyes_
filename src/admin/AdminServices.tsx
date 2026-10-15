@@ -1,7 +1,6 @@
 import {
   useEffect,
   useState,
-  type ChangeEvent,
   type FormEvent,
 } from "react";
 import "./AdminServices.css";
@@ -38,8 +37,6 @@ export default function AdminServices() {
   const [services, setServices] = useState<Service[]>([]);
   const [form, setForm] = useState<ServiceForm>(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -91,57 +88,6 @@ export default function AdminServices() {
     }));
   }
 
-  
-function handleImageChange(
-  event: ChangeEvent<HTMLInputElement>
-) {
-  const file = event.target.files?.[0];
-
-  if (!file) return;
-
-  const allowedTypes = [
-    "image/jpeg",
-    "image/jpg",
-    "image/png",
-    "image/webp",
-  ];
-
-  if (!allowedTypes.includes(file.type)) {
-    setError("Format gambar harus JPG, JPEG, PNG, atau WEBP.");
-    event.target.value = "";
-    setImageFile(null);
-    setImagePreview(
-      form.image_url ? getImageUrl(form.image_url) : ""
-    );
-    return;
-  }
-
-  if (file.size > 5 * 1024 * 1024) {
-    setError("Ukuran gambar maksimal 5 MB.");
-    event.target.value = "";
-    setImageFile(null);
-    setImagePreview(
-      form.image_url ? getImageUrl(form.image_url) : ""
-    );
-    return;
-  }
-
-  setError("");
-  setImageFile(file);
-  setImagePreview(URL.createObjectURL(file));
-}
-
-function getImageUrl(imageUrl: string) {
-  if (
-    imageUrl.startsWith("http://") ||
-    imageUrl.startsWith("https://")
-  ) {
-    return imageUrl;
-  }
-
-  return `${API_URL}${imageUrl}`;
-}
-
 
   function generateSlug(value: string) {
     return value
@@ -178,21 +124,6 @@ function getImageUrl(imageUrl: string) {
       is_active: Boolean(service.is_active),
     });
 
-    setImageFile(null);
-
-setImagePreview(
-  service.image_url
-    ? getImageUrl(service.image_url)
-    : ""
-);
-
-const imageInput = document.getElementById(
-  "service-image"
-) as HTMLInputElement | null;
-
-if (imageInput) {
-  imageInput.value = "";
-}
 
     window.scrollTo({
       top: 0,
@@ -204,17 +135,7 @@ if (imageInput) {
 function resetForm() {
   setEditingId(null);
   setForm(emptyForm);
-  setImageFile(null);
-  setImagePreview("");
   setError("");
-
-  const imageInput = document.getElementById(
-    "service-image"
-  ) as HTMLInputElement | null;
-
-  if (imageInput) {
-    imageInput.value = "";
-  }
 }
 
 
@@ -228,10 +149,6 @@ function resetForm() {
       return;
     }
 
-    if (editingId === null && !imageFile) {
-  setError("Silakan pilih gambar layanan.");
-  return;
-}
 
     try {
       setSaving(true);
@@ -254,12 +171,7 @@ formData.append("description", form.description);
 formData.append("price", form.price);
 formData.append("is_active", String(form.is_active));
 
-if (imageFile) {
-  formData.append("image", imageFile);
-} else {
-  // Pertahankan URL atau path gambar lama saat edit.
-  formData.append("image_url", form.image_url);
-}
+formData.append("image_url", form.image_url);
 
 const response = await fetch(url, {
   method,
@@ -420,28 +332,6 @@ const result = await response.json();
             />
           </label>
 
-          
-<label>
-  Service Image
-
-  <input
-    id="service-image"
-    type="file"
-    accept="image/jpeg,image/jpg,image/png,image/webp"
-    onChange={handleImageChange}
-  />
-
-  <small
-    style={{
-      color: "#777",
-      fontSize: "11px",
-      fontWeight: 400,
-    }}
-  >
-    JPG, JPEG, PNG, WEBP · Maksimal 5 MB
-  </small>
-</label>
-
 
           <label className="service-description">
             Description
@@ -469,36 +359,6 @@ const result = await response.json();
                 )
               }
             />
-
-            
-{imagePreview && (
-  <div className="service-description">
-    <label>Image Preview</label>
-
-    <div
-      style={{
-        marginTop: "8px",
-        width: "100%",
-        maxWidth: "500px",
-        height: "240px",
-        overflow: "hidden",
-        border: "1px solid #d5cec3",
-        background: "#fafafa",
-      }}
-    >
-      <img
-        src={imagePreview}
-        alt="Service preview"
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          display: "block",
-        }}
-      />
-    </div>
-  </div>
-)}
 
 
             <span>
