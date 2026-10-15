@@ -5,6 +5,7 @@ import {
   type ChangeEvent,
 } from "react";
 import "./Contact.css";
+import { clearInputError, shakeInput } from "../utils/inputShake";
 
 interface ContactForm {
   name: string;
@@ -179,6 +180,9 @@ const handleSubmit = async (
         <form
           className="contact-form"
           onSubmit={handleSubmit}
+          onInvalidCapture={(event) => shakeInput(event.target)}
+          onInputCapture={(event) => clearInputError(event.target)}
+          onChangeCapture={(event) => clearInputError(event.target)}
         >
           <div className="form-group">
             <label htmlFor="name">Nama *</label>
