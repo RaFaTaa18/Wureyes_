@@ -4,6 +4,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 96px;
 }
 
 body {
@@ -25,4 +26,49 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+/* Cinematic, one-time reveal for homepage sections. */
+main > .scroll-reveal-section {
+  opacity: 0;
+  transform: translate3d(0, 30px, 0);
+  transition:
+    opacity 900ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 1100ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+main > .scroll-reveal-section.is-scroll-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+/* A restrained scale-and-fade reveal for portfolio photography. */
+#portfolio .portfolio-slide img.scroll-reveal-photo {
+  opacity: 0;
+  transform: scale(1.045);
+  transition:
+    opacity 1000ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 1400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#portfolio .portfolio-slide img.scroll-reveal-photo.is-scroll-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  main > .scroll-reveal-section,
+  main > .scroll-reveal-section.is-scroll-visible,
+  #portfolio .portfolio-slide img.scroll-reveal-photo,
+  #portfolio .portfolio-slide img.scroll-reveal-photo.is-scroll-visible {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    will-change: auto;
+  }
 }
