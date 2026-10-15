@@ -471,3 +471,11 @@
     width: 100%;
   }
 }
+
+
+@media (max-width: 600px) {
+  .testimonial-section {
+    padding: 20px;
+    border-radius: 16px;
+  }
+}
