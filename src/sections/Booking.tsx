@@ -4,6 +4,7 @@ import {
   type FormEvent,
 } from "react";
 import "./Booking.css";
+import { clearInputError, shakeInput } from "../utils/inputShake";
 
 interface Service {
   id: number;
@@ -91,14 +92,14 @@ export default function Booking() {
     }
 
     if (!termsAccepted) {
-  setStatus({
-    type: "error",
-    message:
-      "Silakan setujui Syarat & Ketentuan sebelum mengirim permintaan booking.",
-  });
-
-  return;
-}
+      shakeInput(event.currentTarget.querySelector(".booking-terms-label"));
+      setStatus({
+        type: "error",
+        message:
+          "Silakan setujui Syarat & Ketentuan sebelum mengirim permintaan booking.",
+      });
+      return;
+    }
 
     setSubmitting(true);
 
@@ -204,7 +205,13 @@ Terima kasih.`;
           </div>
         </div>
 
-        <form className="booking-form" onSubmit={handleSubmit}>
+        <form
+          className="booking-form"
+          onSubmit={handleSubmit}
+          onInvalidCapture={(event) => shakeInput(event.target)}
+          onInputCapture={(event) => clearInputError(event.target)}
+          onChangeCapture={(event) => clearInputError(event.target)}
+        >
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="client_name">Nama *</label>
