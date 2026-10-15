@@ -72,3 +72,39 @@ main > .scroll-reveal-section.is-scroll-visible {
     will-change: auto;
   }
 }
+
+
+/* Shared error-state shake for Booking, Testimonials, and Contact forms. */
+.t-shake-target {
+  transition: border-color 280ms ease-out;
+  will-change: transform;
+}
+
+.t-shake-target.is-error {
+  border-color: #d9534f !important;
+}
+
+.t-shake-target.is-shaking {
+  animation: t-input-shake 280ms linear;
+}
+
+.booking-terms-label.is-error .booking-terms-check {
+  border-color: #d9534f;
+}
+
+@keyframes t-input-shake {
+  0% { transform: translateX(0); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  28.57% { transform: translateX(6px); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  57.14% { transform: translateX(-6px); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  78.57% { transform: translateX(4px); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  100% { transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-shake-target,
+  .t-shake-target.is-shaking {
+    animation: none !important;
+    transform: none !important;
+    will-change: auto;
+  }
+}
