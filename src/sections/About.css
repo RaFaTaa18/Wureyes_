@@ -136,32 +136,34 @@
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: 0.18;
+  --pattern-color: #1e1e1e;
+  background-color: #0c0c0c;
   background-image:
-    repeating-linear-gradient(
-      90deg,
-      #111111 1%,
-      transparent 1% 2%,
-      #111111 2% 3%
-    ),
-    repeating-linear-gradient(
+    linear-gradient(
       0deg,
-      #111111 1%,
-      transparent 1% 2%,
-      #111111 2% 3%
+      transparent 24%,
+      var(--pattern-color) 25%,
+      var(--pattern-color) 26%,
+      transparent 27%,
+      transparent 74%,
+      var(--pattern-color) 75%,
+      var(--pattern-color) 76%,
+      transparent 77%,
+      transparent
     ),
-    repeating-radial-gradient(
-      ellipse at 0% 0%,
-      white 10%,
-      transparent 10% 20%,
-      white 20% 30%
-    ),
-    repeating-radial-gradient(
-      ellipse at 100% 100%,
-      white 10%,
-      transparent 10% 20%,
-      white 20% 30%
+    linear-gradient(
+      90deg,
+      transparent 24%,
+      var(--pattern-color) 25%,
+      var(--pattern-color) 26%,
+      transparent 27%,
+      transparent 74%,
+      var(--pattern-color) 75%,
+      var(--pattern-color) 76%,
+      transparent 77%,
+      transparent
     );
+  background-size: 55px 55px;
 }
 
 .testimonial-heading {
