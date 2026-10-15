@@ -110,6 +110,7 @@ export default function Services() {
                   data-page-id={pageNumber}
                   aria-label={`Services page ${pageNumber}`}
                   aria-hidden={currentPage !== pageNumber}
+                  data-active={currentPage === pageNumber ? "true" : "false"}
                   key={pageNumber}
                 >
                   <div className="services-grid">
