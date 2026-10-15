@@ -2658,8 +2658,9 @@ const amount =
                           key={photo.id}
                           href={
                             photo.file_url ||
-                            "#"
+                            `https://drive.google.com/uc?export=view&id=${photo.file_id}`
                           }
+                          title="Buka foto resolusi asli"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="selection-photo"
@@ -2669,8 +2670,9 @@ const amount =
 
                             <img
   src={`${API_URL}/api/google-drive/thumbnail/${photo.file_id}`}
-  alt=""
+  alt={photo.file_name}
   loading="lazy"
+  decoding="async"
   onError={(event) => {
     event.currentTarget.style.display = "none";
     console.error(
