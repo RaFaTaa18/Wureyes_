@@ -1,7 +1,45 @@
 .services-section {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   padding: 120px 6%;
   background: #111111;
   color: #ffffff;
+}
+
+.services-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.18;
+  background-color: gray;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      #111111 1%,
+      transparent 1% 2%,
+      #111111 2% 3%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      #111111 1%,
+      transparent 1% 2%,
+      #111111 2% 3%
+    ),
+    repeating-radial-gradient(
+      ellipse at 0% 0%,
+      white 10%,
+      transparent 10% 20%,
+      white 20% 30%
+    ),
+    repeating-radial-gradient(
+      ellipse at 100% 100%,
+      white 10%,
+      transparent 10% 20%,
+      white 20% 30%
+    );
 }
 
 .section-heading {
