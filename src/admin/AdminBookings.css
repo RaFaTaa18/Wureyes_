@@ -2734,3 +2734,112 @@
     padding: 12px;
   }
 }
+
+
+/* =====================================
+   VIEW SELECTION MODAL — FINAL OVERRIDES
+   Ensure the intended layout wins over legacy !important rules above.
+===================================== */
+.selection-modal-overlay {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+.selection-modal {
+  width: min(1120px, 100%) !important;
+  max-height: calc(100dvh - 50px) !important;
+  min-height: 0 !important;
+}
+
+.selection-modal .selection-modal-header {
+  flex: 0 0 auto !important;
+}
+
+.selection-modal .selection-photo-grid {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain !important;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  grid-auto-rows: max-content !important;
+  align-content: start !important;
+  align-items: start !important;
+  gap: 16px !important;
+  padding: 22px 24px !important;
+  box-sizing: border-box !important;
+}
+
+.selection-modal .selection-photo {
+  display: flex !important;
+  min-width: 0 !important;
+  height: auto !important;
+  align-self: start !important;
+  flex-direction: column !important;
+}
+
+.selection-modal .selection-photo-image {
+  position: relative !important;
+  display: block !important;
+  flex: 0 0 220px !important;
+  width: 100% !important;
+  height: 220px !important;
+  min-height: 220px !important;
+  aspect-ratio: auto !important;
+  overflow: hidden !important;
+  background: #d8d1c6 !important;
+}
+
+.selection-modal .selection-photo-image img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.selection-modal .selection-photo > span {
+  display: block !important;
+  flex: 0 0 auto !important;
+  padding: 10px 12px !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  text-overflow: clip !important;
+}
+
+.selection-modal .selection-modal-footer {
+  flex: 0 0 auto !important;
+}
+
+@media (max-width: 760px) {
+  .selection-modal .selection-photo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+    padding: 16px !important;
+  }
+
+  .selection-modal .selection-photo-image {
+    flex-basis: 160px !important;
+    height: 160px !important;
+    min-height: 160px !important;
+  }
+}
+
+@media (max-width: 450px) {
+  .selection-modal .selection-photo-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    padding: 12px !important;
+  }
+
+  .selection-modal .selection-photo-image {
+    flex-basis: 180px !important;
+    height: 180px !important;
+    min-height: 180px !important;
+  }
+}
