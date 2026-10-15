@@ -1,11 +1,15 @@
 import "./Hero.css";
+import "../styles/cinematicReveal.css";
+import { useCinematicReveal } from "../hooks/useCinematicReveal";
 
 export default function Hero() {
+  const sectionRef = useCinematicReveal<HTMLElement>();
+
   return (
-    <section id="home" className="hero">
+    <section id="home" className="hero" ref={sectionRef}>
       <div className="hero-overlay" aria-hidden="true" />
 
-      <div className="hero-content">
+      <div className="hero-content" data-cinematic-stagger>
         <p className="hero-label">
           PHOTOGRAPHY • VIDEOGRAPHY • EDITING
         </p>
@@ -32,7 +36,7 @@ export default function Hero() {
         </div>
       </div>
 
-      <div className="hero-visual" aria-label="Selected Wureyes photography portfolio">
+      <div className="hero-visual" data-cinematic-reveal aria-label="Selected Wureyes photography portfolio">
         <div className="hero-visual-orbit" aria-hidden="true" />
 
         <div className="hero-device hero-device-center">
