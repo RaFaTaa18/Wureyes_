@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import "./About.css";
+import "../styles/cinematicReveal.css";
+import { useCinematicReveal } from "../hooks/useCinematicReveal";
 import { clearInputError, shakeInput } from "../utils/inputShake";
 
 interface Testimonial {
@@ -12,6 +14,7 @@ interface Testimonial {
 }
 
 export default function About() {
+  const sectionRef = useCinematicReveal<HTMLElement>();
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [loading, setLoading] = useState(true);
   const [clientName, setClientName] = useState("");
@@ -76,8 +79,8 @@ export default function About() {
   }, []);
 
   return (
-    <section id="about" className="about-section">
-      <div className="about-intro">
+    <section id="about" className="about-section" ref={sectionRef}>
+      <div className="about-intro" data-cinematic-stagger>
         <div>
           <p className="about-label">ABOUT WUREYES_</p>
 
@@ -97,7 +100,7 @@ export default function About() {
       </div>
 
       <div className="about-content">
-        <div className="about-statement">
+        <div className="about-statement" data-cinematic-reveal>
           <span>OUR APPROACH</span>
 
           <p>
@@ -108,7 +111,7 @@ export default function About() {
           </p>
         </div>
 
-        <div className="about-values">
+        <div className="about-values" data-cinematic-stagger>
           <div>
             <span>01</span>
             <h3>Authentic</h3>
@@ -138,7 +141,7 @@ export default function About() {
         </div>
       </div>
 
-      <div className="testimonial-section">
+      <div className="testimonial-section" data-cinematic-reveal>
         <div className="testimonial-heading">
           <p>CLIENT STORIES</p>
           <h3>What they say.</h3>
@@ -153,7 +156,7 @@ export default function About() {
             <p>Testimonials coming soon.</p>
           </div>
         ) : (
-          <div className="testimonial-grid">
+          <div className="testimonial-grid" data-cinematic-stagger>
             {testimonials.map((testimonial) => (
               <article
                 className="testimonial-card"
@@ -200,7 +203,7 @@ export default function About() {
           </div>
         )}
 
-        <div className="testimonial-submit">
+        <div className="testimonial-submit" data-cinematic-reveal>
           <div className="testimonial-submit-heading">
             <p>SHARE YOUR EXPERIENCE</p>
             <h4>Ceritakan pengalamanmu.</h4>

@@ -5,6 +5,8 @@ import {
   type ChangeEvent,
 } from "react";
 import "./Contact.css";
+import "../styles/cinematicReveal.css";
+import { useCinematicReveal } from "../hooks/useCinematicReveal";
 import { clearInputError, shakeInput } from "../utils/inputShake";
 
 interface ContactForm {
@@ -15,6 +17,7 @@ interface ContactForm {
 }
 
 export default function Contact() {
+  const sectionRef = useCinematicReveal<HTMLElement>();
   const [form, setForm] = useState<ContactForm>({
     name: "",
     email: "",
@@ -130,8 +133,8 @@ const handleSubmit = async (
 
 
   return (
-    <section id="contact" className="contact-section">
-      <div className="contact-container">
+    <section id="contact" className="contact-section" ref={sectionRef}>
+      <div className="contact-container" data-cinematic-stagger>
         <div className="contact-heading">
           <p className="contact-label">HUBUNGI KAMI</p>
 
@@ -145,7 +148,7 @@ const handleSubmit = async (
             Punya proyek yang ingin diwujudkan, ingin berkolaborasi, atau sekadar ingin menyapa? Kirimkan pesan kepada kami.
           </p>
 
-          <div className="contact-details">
+          <div className="contact-details" data-cinematic-stagger>
             <div>
               <span>EMAIL</span>
               <a href="mailto:rafatacraft@gmail.com">
