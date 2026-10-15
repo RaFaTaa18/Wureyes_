@@ -14,6 +14,7 @@ export default function Services() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
   const sectionRef = useRef<HTMLElement | null>(null);
   const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -21,16 +22,10 @@ export default function Services() {
     fetch(`${API_URL}/api/services`)
       .then((response) => response.json())
       .then((result) => {
-        if (result.success) {
-          setServices(result.data);
-        }
+        if (result.success) setServices(result.data);
       })
-      .catch((error) => {
-        console.error("Failed to load services:", error);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+      .catch((error) => console.error("Failed to load services:", error))
+      .finally(() => setLoading(false));
   }, []);
 
   const servicesPerPage = 3;
@@ -42,6 +37,9 @@ export default function Services() {
     return pages;
   }, [services]);
   const totalPages = Math.max(1, servicePages.length);
+  const selectedIndex = selectedService
+    ? services.findIndex((service) => service.id === selectedService.id)
+    : -1;
 
   useEffect(() => {
     setCurrentPage((page) => Math.min(page, totalPages));
@@ -49,47 +47,35 @@ export default function Services() {
 
   useEffect(() => {
     const section = sectionRef.current;
-
     if (
       !section ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
       !("IntersectionObserver" in window)
-    ) {
-      return;
-    }
+    ) return;
 
     const targets = section.querySelectorAll<HTMLElement>(
-      ".section-heading, .service-card",
+      ".section-heading, .service-card, .service-detail",
     );
-
     targets.forEach((target) => target.classList.add("reveal-ready"));
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("is-revealed");
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      {
-        threshold: 0.12,
-        rootMargin: "0px 0px -40px 0px",
-      },
-    );
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-revealed");
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
 
     targets.forEach((target) => observer.observe(target));
-
     return () => observer.disconnect();
-  }, [services, loading]);
+  }, [services, loading, selectedService]);
+
+  const formatPrice = (price: string) =>
+    Number(price).toLocaleString("id-ID");
 
   return (
-    <section
-      id="services"
-      className="services-section"
-      ref={sectionRef}
-    >
+    <section id="services" className="services-section" ref={sectionRef}>
       <div className="section-heading">
         <p>WHAT WE DO</p>
         <h2>Our Services</h2>
@@ -99,6 +85,35 @@ export default function Services() {
         <p className="loading">Loading services...</p>
       ) : services.length === 0 ? (
         <p className="loading">No services available right now.</p>
+      ) : selectedService ? (
+        <div className="service-detail" key={selectedService.id}>
+          <button
+            type="button"
+            className="service-back"
+            onClick={() => setSelectedService(null)}
+          >
+            <span aria-hidden="true">←</span> Back to services
+          </button>
+
+          <div className="service-detail-number">
+            {String(selectedIndex + 1).padStart(2, "0")}
+          </div>
+          <h3>{selectedService.name}</h3>
+          <p className="service-detail-description">
+            {selectedService.description?.trim() ||
+              `Discover our ${selectedService.name.toLowerCase()} service, thoughtfully created to capture your story with the Wureyes visual approach.`}
+          </p>
+
+          <div className="service-detail-footer">
+            <div className="service-detail-price">
+              <span>STARTING FROM</span>
+              <strong>Rp {formatPrice(selectedService.price)}</strong>
+            </div>
+            <a className="service-book-button" href="#booking">
+              Book This Service <span aria-hidden="true">↗</span>
+            </a>
+          </div>
+        </div>
       ) : (
         <>
           <div className="t-page-slide services-page-slide" data-page={currentPage}>
@@ -114,22 +129,29 @@ export default function Services() {
                   key={pageNumber}
                 >
                   <div className="services-grid">
-                    {pageServices.map((service) => (
-                      <article className="service-card" key={service.id}>
-                        <div className="service-number">
-                          {String(service.id).padStart(2, "0")}
-                        </div>
-                        <h3>{service.name}</h3>
-                        <p>{service.description}</p>
-                        <div className="service-bottom">
-                          <span>
-                            Starting from Rp{" "}
-                            {Number(service.price).toLocaleString("id-ID")}
+                    {pageServices.map((service) => {
+                      const serviceIndex = services.findIndex(
+                        (item) => item.id === service.id,
+                      );
+                      return (
+                        <button
+                          type="button"
+                          className="service-card"
+                          key={service.id}
+                          onClick={() => setSelectedService(service)}
+                          aria-label={`View ${service.name} service details`}
+                        >
+                          <span className="service-card-top">
+                            <span className="service-number">
+                              {String(serviceIndex + 1).padStart(2, "0")}
+                            </span>
+                            <span className="service-card-arrow" aria-hidden="true">↗</span>
                           </span>
-                          <a href="#booking">Book →</a>
-                        </div>
-                      </article>
-                    ))}
+                          <span className="service-card-name">{service.name}</span>
+                          <span className="service-card-action">Explore service</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </section>
               );
