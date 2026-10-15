@@ -218,8 +218,7 @@
   --t-page-from-x: 8px;
 }
 
-.services-page-slide[data-page="1"] .t-page[data-page-id="1"],
-.services-page-slide[data-page="2"] .t-page[data-page-id="2"] {
+.services-page-slide .t-page[data-active="true"] {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
