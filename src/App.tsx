@@ -95,6 +95,11 @@ function App() {
         />
 
         <Route
+          path="/admin/reset-password"
+          element={<AdminResetPassword />}
+        />
+
+        <Route
           path="/admin"
           element={<AdminDashboard />}
         />
