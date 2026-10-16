@@ -9,9 +9,12 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [resetRequested, setResetRequested] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetMessage, setResetMessage] = useState("");
   const API_URL = import.meta.env.VITE_API_URL || "";
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleForgotPassword() {\n    setResetLoading(true);\n    setResetMessage("");\n    setError("");\n    try {\n      const response = await fetch(`${API_URL}/api/auth/forgot-password`, {\n        method: "POST",\n        headers: { "Content-Type": "application/json" },\n        body: JSON.stringify({ email }),\n      });\n      const result = await response.json();\n      if (!response.ok || !result.success) throw new Error(result.message || "Unable to request password reset.");\n      setResetMessage(result.message);\n    } catch (requestError) {\n      setResetMessage(requestError instanceof Error ? requestError.message : "Unable to request password reset.");\n    } finally {\n      setResetLoading(false);\n    }\n  }\n\n  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setLoading(true);
@@ -119,6 +122,33 @@ export default function AdminLogin() {
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
+
+        <div className="admin-forgot-password">
+          {!resetRequested ? (
+            <button
+              type="button"
+              className="admin-forgot-link"
+              onClick={() => {
+                setResetRequested(true);
+                setResetMessage("");
+                setError("");
+              }}
+            >
+              Forgot Password?
+            </button>
+          ) : (
+            <div className="admin-reset-request">
+              <p>Enter your account email above, then request a secure reset link.</p>
+              {resetMessage && <div className="admin-reset-message" role="status">{resetMessage}</div>}
+              <button type="button" onClick={handleForgotPassword} disabled={resetLoading || !email.trim()}>
+                {resetLoading ? "Sending..." : "Send reset link"}
+              </button>
+              <button type="button" className="admin-forgot-link" onClick={() => { setResetRequested(false); setResetMessage(""); }}>
+                Back to sign in
+              </button>
+            </div>
+          )}
+        </div>
 
         <a href="/" className="back-to-site">
           ← Back to website
