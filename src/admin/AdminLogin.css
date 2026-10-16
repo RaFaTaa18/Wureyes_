@@ -128,3 +128,47 @@
     font-size: 34px;
   }
 }
+
+.admin-forgot-password {
+  margin-top: 16px;
+  text-align: right;
+}
+.admin-login-card .admin-forgot-link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #725a42;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.admin-login-card .admin-forgot-link:hover {
+  background: transparent;
+  color: #111;
+}
+.admin-reset-request {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  text-align: left;
+}
+.admin-reset-request p,
+.admin-reset-message {
+  margin: 0;
+  color: #555;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.admin-reset-message {
+  padding: 10px 12px;
+  background: #e7eee5;
+  color: #315d3a;
+  overflow-wrap: anywhere;
+}
+.admin-login-card .admin-reset-request .admin-forgot-link {
+  align-self: center;
+}
