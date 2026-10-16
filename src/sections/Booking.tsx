@@ -328,29 +328,49 @@ Terima kasih.`;
           </div>
 
           <div className="booking-terms">
-  <label className="booking-terms-label">
-    <input
-      type="checkbox"
-      checked={termsAccepted}
-      onChange={(event) =>
-        setTermsAccepted(event.target.checked)
-      }
-    />
-
-    <span className="booking-terms-check"></span>
+  <div className="booking-terms-row">
+    <label className="booking-terms-label">
+      <input
+        type="checkbox"
+        checked={termsAccepted}
+        onChange={(event) =>
+          setTermsAccepted(event.target.checked)
+        }
+        aria-label="Setujui Syarat dan Ketentuan Wureyes"
+      />
+      <span className="neon-checkbox__frame" aria-hidden="true">
+        <span className="neon-checkbox__box">
+          <span className="neon-checkbox__check-container">
+            <svg viewBox="0 0 24 24" className="neon-checkbox__check">
+              <path d="M3,12.5l7,7L21,5" />
+            </svg>
+          </span>
+          <span className="neon-checkbox__glow" />
+          <span className="neon-checkbox__borders">
+            <span /><span /><span /><span />
+          </span>
+        </span>
+        <span className="neon-checkbox__effects">
+          <span className="neon-checkbox__particles">
+            {Array.from({ length: 12 }, (_, index) => <span key={index} />)}
+          </span>
+          <span className="neon-checkbox__rings">
+            <span className="ring" /><span className="ring" /><span className="ring" />
+          </span>
+          <span className="neon-checkbox__sparks">
+            <span /><span /><span /><span />
+          </span>
+        </span>
+      </span>
+    </label>
 
     <span className="booking-terms-text">
       Saya telah membaca dan menyetujui{" "}
-      <a
-        href="/terms"
-        target="_blank"
-        rel="noreferrer"
-      >
-        Syarat & Ketentuan
-      </a>
-      {" "}Wureyes.
+      <a href="/terms" target="_blank" rel="noreferrer">
+        Syarat &amp; Ketentuan
+      </a>{" "}Wureyes.
     </span>
-  </label>
+  </div>
 </div>
 
           {status.message && (

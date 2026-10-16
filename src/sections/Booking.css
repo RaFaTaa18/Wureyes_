@@ -176,75 +176,273 @@
   margin: 5px 0 25px;
 }
 
-.booking-terms-label {
-  position: relative;
-
+.booking-terms-row {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  gap: 14px;
+}
 
+.booking-terms-label {
+  --primary: #00ffaa;
+  --primary-dark: #00cc88;
+  --size: 24px;
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 var(--size);
+  width: var(--size);
+  height: var(--size);
   cursor: pointer;
-
-  font-size: 0.78rem;
-  line-height: 1.6;
-
-  color: rgba(17, 17, 17, 0.58);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .booking-terms-label input {
   position: absolute;
+  width: 1px;
+  height: 1px;
   opacity: 0;
+}
+
+.neon-checkbox__frame {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.neon-checkbox__box {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  border: 1.5px solid var(--primary-dark);
+  border-radius: 4px;
+  transition: background 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+}
+
+.neon-checkbox__check-container {
+  position: absolute;
+  inset: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.neon-checkbox__check {
+  width: 80%;
+  height: 80%;
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  transform-origin: center;
+  transition: stroke-dashoffset 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s ease;
+}
+
+.neon-checkbox__glow {
+  position: absolute;
+  inset: -2px;
+  border-radius: 6px;
+  background: var(--primary);
+  opacity: 0;
+  filter: blur(7px);
+  transform: scale(1.15);
+  transition: opacity 0.3s ease;
   pointer-events: none;
 }
 
-.booking-terms-check {
-  flex: 0 0 17px;
-
-  width: 17px;
-  height: 17px;
-
-  margin-top: 2px;
-
-  border: 1px solid rgba(17, 17, 17, 0.35);
-
-  background: transparent;
-
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease;
+.neon-checkbox__borders {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 4px;
+  pointer-events: none;
 }
 
-.booking-terms-label input:checked + .booking-terms-check {
-  background: #111111;
-  border-color: #111111;
+.neon-checkbox__borders > span {
+  position: absolute;
+  width: 32px;
+  height: 1px;
+  background: var(--primary);
+  opacity: 0;
 }
 
-.booking-terms-label input:checked + .booking-terms-check::after {
-  content: "";
+.neon-checkbox__borders > span:nth-child(1) {
+  top: 0;
+  left: -100%;
+}
+.neon-checkbox__borders > span:nth-child(2) {
+  top: -100%;
+  right: 0;
+  width: 1px;
+  height: 32px;
+}
+.neon-checkbox__borders > span:nth-child(3) {
+  right: -100%;
+  bottom: 0;
+}
+.neon-checkbox__borders > span:nth-child(4) {
+  bottom: -100%;
+  left: 0;
+  width: 1px;
+  height: 32px;
+}
 
-  display: block;
+.neon-checkbox__effects {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
 
-  width: 4px;
-  height: 8px;
+.neon-checkbox__particles,
+.neon-checkbox__rings,
+.neon-checkbox__sparks {
+  position: absolute;
+  inset: 0;
+}
 
-  margin: 2px 0 0 5px;
+.neon-checkbox__particles > span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 5px var(--primary);
+  opacity: 0;
+}
 
-  border: solid #ffffff;
-  border-width: 0 1.5px 1.5px 0;
+.neon-checkbox__particles > span:nth-child(1) { --x: 20px; --y: -20px; }
+.neon-checkbox__particles > span:nth-child(2) { --x: -20px; --y: -20px; }
+.neon-checkbox__particles > span:nth-child(3) { --x: 20px; --y: 20px; }
+.neon-checkbox__particles > span:nth-child(4) { --x: -20px; --y: 20px; }
+.neon-checkbox__particles > span:nth-child(5) { --x: 27px; --y: 0px; }
+.neon-checkbox__particles > span:nth-child(6) { --x: -27px; --y: 0px; }
+.neon-checkbox__particles > span:nth-child(7) { --x: 0px; --y: 27px; }
+.neon-checkbox__particles > span:nth-child(8) { --x: 0px; --y: -27px; }
+.neon-checkbox__particles > span:nth-child(9) { --x: 16px; --y: -24px; }
+.neon-checkbox__particles > span:nth-child(10) { --x: -16px; --y: 24px; }
+.neon-checkbox__particles > span:nth-child(11) { --x: 24px; --y: 16px; }
+.neon-checkbox__particles > span:nth-child(12) { --x: -24px; --y: -16px; }
 
-  transform: rotate(45deg);
+.neon-checkbox__rings {
+  inset: -12px;
+}
+.neon-checkbox__rings .ring {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--primary);
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0);
+}
+.neon-checkbox__sparks > span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 15px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--primary), transparent);
+  opacity: 0;
+}
+.neon-checkbox__sparks > span:nth-child(1) { --r: 0deg; }
+.neon-checkbox__sparks > span:nth-child(2) { --r: 90deg; }
+.neon-checkbox__sparks > span:nth-child(3) { --r: 180deg; }
+.neon-checkbox__sparks > span:nth-child(4) { --r: 270deg; }
+
+.booking-terms-label:hover .neon-checkbox__box {
+  border-color: var(--primary);
+  transform: scale(1.05);
+}
+.booking-terms-label input:checked ~ .neon-checkbox__frame .neon-checkbox__box {
+  border-color: var(--primary);
+  background: rgba(0, 255, 170, 0.1);
+}
+.booking-terms-label input:checked ~ .neon-checkbox__frame .neon-checkbox__check {
+  stroke-dashoffset: 0;
+  transform: scale(1.05);
+}
+.booking-terms-label input:checked ~ .neon-checkbox__frame .neon-checkbox__glow {
+  opacity: 0.2;
+}
+.booking-terms-label input:checked ~ .neon-checkbox__frame .neon-checkbox__borders > span {
+  opacity: 1;
+}
+.booking-terms-label input:checked ~ .neon-checkbox__frame .neon-checkbox__borders > span:nth-child(1) {
+  animation: neonBorderRight 1.6s linear infinite;
+}
+.booking-terms-label input:checked ~ .neon-checkbox__frame .neon-checkbox__borders > span:nth-child(2) {
+  animation: neonBorderDown 1.6s linear infinite;
+}
+.booking-terms-label input:checked ~ .neon-checkbox__frame .neon-checkbox__borders > span:nth-child(3) {
+  animation: neonBorderLeft 1.6s linear infinite;
+}
+.booking-terms-label input:checked ~ .neon-checkbox__frame .neon-checkbox__borders > span:nth-child(4) {
+  animation: neonBorderUp 1.6s linear infinite;
+}
+.booking-terms-label input:checked ~ .neon-checkbox__frame .neon-checkbox__particles > span {
+  animation: neonParticle 0.6s ease-out forwards;
+}
+.booking-terms-label input:checked ~ .neon-checkbox__frame .neon-checkbox__rings .ring {
+  animation: neonRing 0.6s ease-out forwards;
+}
+.booking-terms-label input:checked ~ .neon-checkbox__frame .neon-checkbox__sparks > span {
+  animation: neonSpark 0.6s ease-out forwards;
+}
+
+.booking-terms-label input:focus-visible ~ .neon-checkbox__frame .neon-checkbox__box {
+  outline: 2px solid #111;
+  outline-offset: 4px;
+}
+
+.booking-terms-text {
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: rgba(17, 17, 17, 0.68);
 }
 
 .booking-terms-text a {
   color: #111111;
   font-weight: 600;
-
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-
 .booking-terms-text a:hover {
   opacity: 0.55;
+}
+
+@keyframes neonBorderRight { to { transform: translateX(160%); } }
+@keyframes neonBorderDown { to { transform: translateY(160%); } }
+@keyframes neonBorderLeft { to { transform: translateX(-160%); } }
+@keyframes neonBorderUp { to { transform: translateY(-160%); } }
+@keyframes neonParticle {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--x, 18px)), calc(-50% + var(--y, 18px))) scale(0); opacity: 0; }
+}
+@keyframes neonRing {
+  0% { transform: scale(0); opacity: 1; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+@keyframes neonSpark {
+  0% { transform: rotate(var(--r, 0deg)) translateX(0) scale(1); opacity: 1; }
+  100% { transform: rotate(var(--r, 0deg)) translateX(22px) scale(0); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .neon-checkbox__box,
+  .neon-checkbox__check,
+  .neon-checkbox__glow {
+    transition: none;
+  }
+  .booking-terms-label input:checked ~ .neon-checkbox__frame .neon-checkbox__borders > span,
+  .booking-terms-label input:checked ~ .neon-checkbox__frame .neon-checkbox__particles > span,
+  .booking-terms-label input:checked ~ .neon-checkbox__frame .neon-checkbox__rings .ring,
+  .booking-terms-label input:checked ~ .neon-checkbox__frame .neon-checkbox__sparks > span {
+    animation: none;
+  }
 }
 
 .booking-submit {
