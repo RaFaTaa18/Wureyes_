@@ -4,7 +4,6 @@ import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import crypto from "node:crypto";
 import { promisify } from "node:util";
-import { timingSafeEqual } from "node:crypto";
 import pool from "../db.js";
 
 const router = express.Router();
