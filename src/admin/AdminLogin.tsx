@@ -14,7 +14,27 @@ export default function AdminLogin() {
   const [resetMessage, setResetMessage] = useState("");
   const API_URL = import.meta.env.VITE_API_URL || "";
 
-  async function handleForgotPassword() {\n    setResetLoading(true);\n    setResetMessage("");\n    setError("");\n    try {\n      const response = await fetch(`${API_URL}/api/auth/forgot-password`, {\n        method: "POST",\n        headers: { "Content-Type": "application/json" },\n        body: JSON.stringify({ email }),\n      });\n      const result = await response.json();\n      if (!response.ok || !result.success) throw new Error(result.message || "Unable to request password reset.");\n      setResetMessage(result.message);\n    } catch (requestError) {\n      setResetMessage(requestError instanceof Error ? requestError.message : "Unable to request password reset.");\n    } finally {\n      setResetLoading(false);\n    }\n  }\n\n  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleForgotPassword() {
+    setResetLoading(true);
+    setResetMessage("");
+    setError("");
+    try {
+      const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || "Unable to request password reset.");
+      setResetMessage(result.message);
+    } catch (requestError) {
+      setResetMessage(requestError instanceof Error ? requestError.message : "Unable to request password reset.");
+    } finally {
+      setResetLoading(false);
+    }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setLoading(true);
