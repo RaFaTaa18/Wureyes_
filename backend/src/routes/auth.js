@@ -196,13 +196,13 @@ function getMailTransport() {
 function getFrontendBaseUrl() {
   const baseUrl = process.env.FRONTEND_URL;
   if (!baseUrl) throw new Error("FRONTEND_URL is not configured");
-  return baseUrl.replace(/\\/$/, "");
+  return baseUrl.replace(/\/$/, "");
 }
 
 router.post("/forgot-password", async (req, res) => {
   try {
     const email = String(req.body?.email || "").trim().toLowerCase();
-    if (!email || email.length > 254 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+    if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res.status(200).json(genericResetResponse);
     }
 
@@ -231,7 +231,7 @@ router.post("/forgot-password", async (req, res) => {
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to: user.email,
       subject: "Reset your Wureyes admin password",
-      text: `Hello ${user.name || "Wureyes user"},\\n\\nUse this link to reset your password within ${RESET_TOKEN_TTL_MINUTES} minutes:\\n${resetUrl}\\n\\nIf you did not request this, you can ignore this email.`,
+      text: `Hello ${user.name || "Wureyes user"},\n\nUse this link to reset your password within ${RESET_TOKEN_TTL_MINUTES} minutes:\n${resetUrl}\n\nIf you did not request this, you can ignore this email.`,
       html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#111"><h2>WUREYES_</h2><p>Hello ${String(user.name || "Wureyes user").replace(/[&<>"]/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[char]))},</p><p>We received a request to reset your Wureyes admin password.</p><p><a href="${resetUrl}" style="display:inline-block;padding:12px 20px;background:#111;color:#fff;text-decoration:none">Reset password</a></p><p>This link expires in ${RESET_TOKEN_TTL_MINUTES} minutes and can only be used once.</p><p>If you did not request this, you can ignore this email.</p></div>`,
     });
 
