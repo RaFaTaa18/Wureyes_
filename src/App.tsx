@@ -15,6 +15,7 @@ import About from "./sections/About";
 import Contact from "./sections/Contact";
 
 import AdminLogin from "./admin/AdminLogin";
+import AdminResetPassword from "./admin/AdminResetPassword";
 import AdminDashboard from "./admin/AdminDashboard";
 import PhotoSelection from "./client/PhotoSelection";
 import Terms from "./client/Terms";
