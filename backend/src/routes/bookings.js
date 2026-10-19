@@ -1,11 +1,18 @@
 import express from "express";
 import pool from "../db.js";
+import { createRateLimiter } from "../middlware/rateLimit.js";
 import {
   authenticateToken,
   requireAdmin,
 } from "../middlware/auth.js";
 
 const router = express.Router();
+
+const bookingSubmissionRateLimit = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 5,
+  message: "Terlalu banyak pengiriman booking. Silakan coba lagi dalam 15 menit.",
+});
 
 // ===============================
 // GET BOOKINGS - ADMIN ONLY
@@ -68,29 +75,42 @@ router.get(
 // POST BOOKING - PUBLIC
 // ===============================
 
-router.post("/", async (req, res) => {
+router.post("/", bookingSubmissionRateLimit, async (req, res) => {
   try {
-    const {
-      client_name,
-      email,
-      phone,
-      service_id,
-      event_date,
-      location,
-      message,
-    } = req.body;
+    const body = req.body ?? {};
+    const client_name = typeof body.client_name === "string" ? body.client_name.trim() : "";
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    const phone = typeof body.phone === "string" || typeof body.phone === "number" ? String(body.phone).trim() : "";
+    const service_id = Number(body.service_id);
+    const event_date = typeof body.event_date === "string" ? body.event_date.trim() : "";
+    const location = typeof body.location === "string" ? body.location.trim() : "";
+    const message = typeof body.message === "string" ? body.message.trim() : "";
 
     if (
       !client_name ||
       !email ||
       !phone ||
-      !service_id ||
+      !Number.isSafeInteger(service_id) || service_id <= 0 ||
       !event_date
     ) {
       return res.status(400).json({
         success: false,
         message:
           "client_name, email, phone, service_id, and event_date are required",
+      });
+    }
+
+    if (
+      client_name.length > 120 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 ||
+      phone.length > 30 ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(event_date) ||
+      (location && location.length > 255) ||
+      (message && message.length > 2000)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Periksa kembali nama, email, nomor telepon, tanggal, dan panjang pesan.",
       });
     }
 
