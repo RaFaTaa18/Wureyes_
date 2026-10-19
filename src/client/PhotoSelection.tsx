@@ -20,7 +20,7 @@ interface Photo {
 }
 
 interface SelectedPhoto {
-  id: string;
+  file_id: string;
   file_name: string;
 }
 
@@ -105,7 +105,7 @@ export default function PhotoSelection() {
 
         setSelected(
           (data.selected || []).map(
-            (photo) => String(photo.id)
+            (photo) => String(photo.file_id)
           )
         );
       } catch (err) {
@@ -126,12 +126,18 @@ export default function PhotoSelection() {
 
   function togglePhoto(id: string) {
     setSuccess("");
+    setError("");
 
     setSelected((current) => {
       if (current.includes(id)) {
         return current.filter(
           (item) => item !== id
         );
+      }
+
+      if (current.length >= 100) {
+        setError("Maksimal 100 foto dapat dipilih dalam satu pengiriman.");
+        return current;
       }
 
       return [...current, id];
