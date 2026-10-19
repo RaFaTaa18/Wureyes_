@@ -1,4 +1,5 @@
 import express from "express";
+import { createRateLimiter } from "../middlware/rateLimit.js";
 import {
   authenticateToken,
   requireAdmin,
@@ -8,6 +9,11 @@ const router = express.Router();
 
 const FOLDER_ID = "1Z7rapUP1N1paK4d-j1vYz2RtHKilCbX8";
 const GOOGLE_API_TIMEOUT_MS = 10000;
+const thumbnailRateLimit = createRateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 120,
+  message: "Too many thumbnail requests. Please try again in a minute.",
+});
 
 function isValidDriveFileId(fileId) {
   return (
@@ -114,7 +120,7 @@ router.get(
 |--------------------------------------------------------------------------
 */
 
-router.get("/thumbnail/:fileId", async (req, res) => {
+router.get("/thumbnail/:fileId", thumbnailRateLimit, async (req, res) => {
   try {
     const { fileId } = req.params;
     const apiKey = process.env.GOOGLE_DRIVE_API_KEY;
