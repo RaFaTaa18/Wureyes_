@@ -52,7 +52,6 @@ router.get("/stats", authenticateToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to load dashboard statistics",
-      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
