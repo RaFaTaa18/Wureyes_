@@ -55,41 +55,44 @@ async function getDriveFiles(folderId) {
   const apiKey = process.env.GOOGLE_DRIVE_API_KEY;
 
   if (!apiKey) {
-    throw new Error(
-      "GOOGLE_DRIVE_API_KEY is not configured"
-    );
+    throw new Error("GOOGLE_DRIVE_API_KEY is not configured");
   }
 
-  const query = encodeURIComponent(
-    `'${folderId}' in parents and trashed = false`
-  );
+  const files = [];
+  let pageToken;
 
-  const fields = encodeURIComponent(
-    "files(id,name,mimeType,thumbnailLink,webViewLink,size,createdTime)"
-  );
+  do {
+    const params = new URLSearchParams({
+      q: `'${folderId}' in parents and trashed = false`,
+      key: apiKey,
+      fields: "nextPageToken,files(id,name,mimeType,thumbnailLink,webViewLink,size,createdTime)",
+      pageSize: "1000",
+      orderBy: "name",
+    });
 
-  const url =
-    `https://www.googleapis.com/drive/v3/files` +
-    `?q=${query}` +
-    `&key=${apiKey}` +
-    `&fields=${fields}` +
-    `&pageSize=1000` +
-    `&orderBy=name`;
+    if (pageToken) {
+      params.set("pageToken", pageToken);
+    }
 
-  const response = await fetch(url, {
-    signal: AbortSignal.timeout(10000),
-  });
-
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      result.error?.message ||
-        "Failed to retrieve Google Drive files"
+    const response = await fetch(
+      `https://www.googleapis.com/drive/v3/files?${params.toString()}`,
+      { signal: AbortSignal.timeout(10000) }
     );
-  }
 
-  return result.files || [];
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error("Failed to retrieve Google Drive files");
+    }
+
+    if (Array.isArray(result.files)) {
+      files.push(...result.files);
+    }
+
+    pageToken = result.nextPageToken;
+  } while (pageToken);
+
+  return files;
 }
 
 // =====================================================
@@ -461,11 +464,7 @@ router.get(
         SELECT
           b.id,
           b.client_name,
-          b.email,
-          b.phone,
           b.event_date,
-          b.location,
-          b.message,
           b.status,
           b.drive_folder_url,
           b.selection_token,
@@ -550,17 +549,8 @@ router.get(
           client_name:
             booking.client_name,
 
-          email:
-            booking.email,
-
-          phone:
-            booking.phone,
-
           event_date:
             booking.event_date,
-
-          location:
-            booking.location,
 
           service_name:
             booking.service_name,
