@@ -19,10 +19,14 @@ const storage = multer.diskStorage({
     cb(null, uploadDirectory);
   },
 
-  filename: (req, file, cb) => {
-    const extension = path.extname(
-      file.originalname
-    );
+  filename: (_req, file, cb) => {
+    const extensions = {
+      "image/jpeg": ".jpg",
+      "image/jpg": ".jpg",
+      "image/png": ".png",
+      "image/webp": ".webp",
+    };
+    const extension = extensions[file.mimetype];
 
     const filename =
       `${Date.now()}-${Math.round(
