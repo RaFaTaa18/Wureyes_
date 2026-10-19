@@ -27,10 +27,7 @@ interface SelectedPhoto {
 interface GalleryData {
   booking_id: number;
   client_name: string;
-  email: string;
-  phone: string;
   event_date: string;
-  location: string | null;
   service_name: string;
   status: string;
   files: Photo[];
