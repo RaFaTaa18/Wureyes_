@@ -4,6 +4,7 @@ import path from "path";
 
 import pool from "../db.js";
 import upload from "../middlware/upload.js";
+import validateImageSignature from "../middlware/validateImageSignature.js";
 
 import {
   authenticateToken,
@@ -71,6 +72,7 @@ router.post(
   authenticateToken,
   requireAdmin,
   upload.single("image"),
+  validateImageSignature,
   async (req, res) => {
     try {
       const {
@@ -183,6 +185,7 @@ router.put(
   authenticateToken,
   requireAdmin,
   upload.single("image"),
+  validateImageSignature,
   async (req, res) => {
     try {
       const { id } = req.params;
