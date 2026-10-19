@@ -1,7 +1,14 @@
 import express from "express";
 import pool from "../db.js";
+import { createRateLimiter } from "../middlware/rateLimit.js";
 
 const router = express.Router();
+
+const testimonialSubmissionRateLimit = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 5,
+  message: "Terlalu banyak pengiriman testimonial. Silakan coba lagi dalam 15 menit.",
+});
 
 // Public testimonials shown on the website.
 router.get("/", async (req, res) => {
@@ -34,22 +41,23 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Client testimonial submission. New testimonials are published immediately.
-router.post("/", async (req, res) => {
+// Public submissions remain immediately visible, matching the current frontend flow.
+router.post("/", testimonialSubmissionRateLimit, async (req, res) => {
   try {
+    const body = req.body ?? {};
     const clientName =
-      typeof req.body.client_name === "string"
-        ? req.body.client_name.trim()
+      typeof body.client_name === "string"
+        ? body.client_name.trim()
         : "";
     const clientRole =
-      typeof req.body.client_role === "string"
-        ? req.body.client_role.trim()
+      typeof body.client_role === "string"
+        ? body.client_role.trim()
         : "";
     const message =
-      typeof req.body.message === "string"
-        ? req.body.message.trim()
+      typeof body.message === "string"
+        ? body.message.trim()
         : "";
-    const rating = Number(req.body.rating);
+    const rating = Number(body.rating);
 
     if (!clientName || !message) {
       return res.status(400).json({

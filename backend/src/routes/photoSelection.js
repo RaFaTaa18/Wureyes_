@@ -2,6 +2,7 @@ import express from "express";
 import crypto from "crypto";
 
 import pool from "../db.js";
+import { createRateLimiter } from "../middlware/rateLimit.js";
 
 import {
   authenticateToken,
@@ -9,6 +10,12 @@ import {
 } from "../middlware/auth.js";
 
 const router = express.Router();
+
+const photoGalleryRateLimit = createRateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 30,
+  message: "Terlalu banyak permintaan galeri. Silakan coba lagi sebentar.",
+});
 
 // =====================================================
 // HELPER - EXTRACT GOOGLE DRIVE FOLDER ID
@@ -48,39 +55,44 @@ async function getDriveFiles(folderId) {
   const apiKey = process.env.GOOGLE_DRIVE_API_KEY;
 
   if (!apiKey) {
-    throw new Error(
-      "GOOGLE_DRIVE_API_KEY is not configured"
-    );
+    throw new Error("GOOGLE_DRIVE_API_KEY is not configured");
   }
 
-  const query = encodeURIComponent(
-    `'${folderId}' in parents and trashed = false`
-  );
+  const files = [];
+  let pageToken;
 
-  const fields = encodeURIComponent(
-    "files(id,name,mimeType,thumbnailLink,webViewLink,size,createdTime)"
-  );
+  do {
+    const params = new URLSearchParams({
+      q: `'${folderId}' in parents and trashed = false`,
+      key: apiKey,
+      fields: "nextPageToken,files(id,name,mimeType,thumbnailLink,webViewLink,size,createdTime)",
+      pageSize: "1000",
+      orderBy: "name",
+    });
 
-  const url =
-    `https://www.googleapis.com/drive/v3/files` +
-    `?q=${query}` +
-    `&key=${apiKey}` +
-    `&fields=${fields}` +
-    `&pageSize=1000` +
-    `&orderBy=name`;
+    if (pageToken) {
+      params.set("pageToken", pageToken);
+    }
 
-  const response = await fetch(url);
-
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      result.error?.message ||
-        "Failed to retrieve Google Drive files"
+    const response = await fetch(
+      `https://www.googleapis.com/drive/v3/files?${params.toString()}`,
+      { signal: AbortSignal.timeout(10000) }
     );
-  }
 
-  return result.files || [];
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error("Failed to retrieve Google Drive files");
+    }
+
+    if (Array.isArray(result.files)) {
+      files.push(...result.files);
+    }
+
+    pageToken = result.nextPageToken;
+  } while (pageToken);
+
+  return files;
 }
 
 // =====================================================
@@ -435,20 +447,24 @@ router.post(
 
 router.get(
   "/:token",
+  photoGalleryRateLimit,
   async (req, res) => {
     try {
       const { token } = req.params;
+
+      if (typeof token !== "string" || !/^[a-f0-9]{64}$/i.test(token)) {
+        return res.status(404).json({
+          success: false,
+          message: "Photo selection link not found",
+        });
+      }
 
       const [rows] = await pool.query(
         `
         SELECT
           b.id,
           b.client_name,
-          b.email,
-          b.phone,
           b.event_date,
-          b.location,
-          b.message,
           b.status,
           b.drive_folder_url,
           b.selection_token,
@@ -533,17 +549,8 @@ router.get(
           client_name:
             booking.client_name,
 
-          email:
-            booking.email,
-
-          phone:
-            booking.phone,
-
           event_date:
             booking.event_date,
-
-          location:
-            booking.location,
 
           service_name:
             booking.service_name,
@@ -594,9 +601,7 @@ router.get(
 
       res.status(500).json({
         success: false,
-        message:
-          error.message ||
-          "Failed to load photo gallery",
+        message: "Failed to load photo gallery",
       });
     }
   }
@@ -608,147 +613,187 @@ router.get(
 
 router.post(
   "/:token",
+  photoGalleryRateLimit,
   async (req, res) => {
     let connection;
+    let transactionStarted = false;
 
     try {
       const { token } = req.params;
-
-      const {
-        selected_photos,
-        note,
-      } = req.body;
+      const { selected_photos, note } = req.body;
 
       if (
-        !Array.isArray(selected_photos)
+        typeof token !== "string" ||
+        !/^[a-f0-9]{64}$/i.test(token)
       ) {
-        return res.status(400).json({
+        return res.status(404).json({
           success: false,
-          message:
-            "selected_photos must be an array",
+          message: "Photo selection link not found",
         });
       }
 
-      connection =
-        await pool.getConnection();
+      if (!Array.isArray(selected_photos)) {
+        return res.status(400).json({
+          success: false,
+          message: "selected_photos must be an array",
+        });
+      }
 
-      const [rows] =
-        await connection.query(
-          `
-          SELECT
-            id
-          FROM bookings
+      const MAX_SELECTED_PHOTOS = 100;
+      if (selected_photos.length > MAX_SELECTED_PHOTOS) {
+        return res.status(400).json({
+          success: false,
+          message: `A maximum of ${MAX_SELECTED_PHOTOS} photos can be selected`,
+        });
+      }
 
-          WHERE selection_token = ?
+      if (
+        note !== undefined &&
+        note !== null &&
+        (typeof note !== "string" || note.length > 2000)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Note must be a string of at most 2000 characters",
+        });
+      }
 
-          LIMIT 1
-          `,
-          [token]
-        );
+      const normalizedNote = typeof note === "string"
+        ? note.trim() || null
+        : null;
+
+      const [rows] = await pool.query(
+        `
+        SELECT id, drive_folder_url
+        FROM bookings
+        WHERE selection_token = ?
+        LIMIT 1
+        `,
+        [token]
+      );
 
       if (rows.length === 0) {
         return res.status(404).json({
           success: false,
-          message:
-            "Photo selection link not found",
+          message: "Photo selection link not found",
         });
       }
 
-      const bookingId =
-        rows[0].id;
+      const booking = rows[0];
+      const bookingId = booking.id;
+      const folderId = extractFolderId(booking.drive_folder_url);
 
+      if (!folderId) {
+        return res.status(400).json({
+          success: false,
+          message: "Photo gallery is not configured correctly",
+        });
+      }
+
+      // Validate every submitted photo against this booking's actual Drive folder.
+      const driveFiles = await getDriveFiles(folderId);
+      const allowedPhotos = new Map(
+        driveFiles
+          .filter((file) => file.mimeType?.startsWith("image/"))
+          .map((file) => [file.id, file])
+      );
+
+      const seenIds = new Set();
+      const validatedPhotos = [];
+
+      for (const photo of selected_photos) {
+        if (
+          !photo ||
+          typeof photo.id !== "string" ||
+          !/^[A-Za-z0-9_-]{1,200}$/.test(photo.id) ||
+          typeof photo.name !== "string" ||
+          photo.name.trim().length === 0 ||
+          photo.name.length > 255
+        ) {
+          return res.status(400).json({
+            success: false,
+            message: "One or more selected photos are invalid",
+          });
+        }
+
+        if (seenIds.has(photo.id)) {
+          return res.status(400).json({
+            success: false,
+            message: "Duplicate photo selections are not allowed",
+          });
+        }
+
+        const driveFile = allowedPhotos.get(photo.id);
+        if (!driveFile) {
+          return res.status(400).json({
+            success: false,
+            message: "A selected photo does not belong to this booking gallery",
+          });
+        }
+
+        seenIds.add(photo.id);
+        validatedPhotos.push({
+          id: driveFile.id,
+          name: driveFile.name,
+          driveUrl: driveFile.webViewLink ||
+            `https://drive.google.com/file/d/${driveFile.id}/view`,
+          thumbnail: driveFile.thumbnailLink ||
+            `https://drive.google.com/thumbnail?id=${driveFile.id}&sz=w1200`,
+        });
+      }
+
+      connection = await pool.getConnection();
       await connection.beginTransaction();
+      transactionStarted = true;
 
       await connection.query(
-        `
-        DELETE FROM photo_selections
-
-        WHERE booking_id = ?
-        `,
+        "DELETE FROM photo_selections WHERE booking_id = ?",
         [bookingId]
       );
 
-      for (
-        const photo of selected_photos
-      ) {
-        if (
-          !photo?.id ||
-          !photo?.name
-        ) {
-          continue;
-        }
-
+      for (const photo of validatedPhotos) {
         await connection.query(
           `
           INSERT INTO photo_selections
-          (
-            booking_id,
-            file_id,
-            file_name,
-            file_url,
-            thumbnail_url,
-            note
-          )
-
+            (booking_id, file_id, file_name, file_url, thumbnail_url, note)
           VALUES (?, ?, ?, ?, ?, ?)
           `,
           [
             bookingId,
-
-            String(
-              photo.id
-            ),
-
-            String(
-              photo.name
-            ),
-
-            photo.driveUrl ||
-              null,
-
-            photo.thumbnail ||
-              null,
-
-            note?.trim() ||
-              null,
+            photo.id,
+            photo.name,
+            photo.driveUrl,
+            photo.thumbnail,
+            normalizedNote,
           ]
         );
       }
 
       await connection.commit();
+      transactionStarted = false;
 
-      res.json({
+      return res.json({
         success: true,
-
-        message:
-          "Photo selection submitted successfully",
-
+        message: "Photo selection submitted successfully",
         data: {
-          booking_id:
-            bookingId,
-
-          selected_count:
-            selected_photos.length,
-
-          note:
-            note?.trim() ||
-            null,
+          booking_id: bookingId,
+          selected_count: validatedPhotos.length,
+          note: normalizedNote,
         },
       });
     } catch (error) {
-      if (connection) {
+      if (connection && transactionStarted) {
         await connection.rollback();
       }
 
       console.error(
-        "Submit photo selection error:",
-        error
+        "Submit photo selection failed:",
+        error instanceof Error ? error.message : "Unknown error"
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
-        message:
-          "Failed to submit photo selection",
+        message: "Failed to submit photo selection",
       });
     } finally {
       if (connection) {

@@ -2,6 +2,7 @@ import express from "express";
 import fs from "fs";
 import path from "path";
 import serviceUpload from "../middlware/serviceUpload.js";
+import validateImageSignature from "../middlware/validateImageSignature.js";
 import pool from "../db.js";
 
 import {
@@ -110,6 +111,7 @@ router.post(
   authenticateToken,
   requireAdmin,
   handleServiceUpload,
+  validateImageSignature,
   async (req, res) => {
 
     try {
@@ -238,6 +240,7 @@ router.put(
   authenticateToken,
   requireAdmin,
   handleServiceUpload,
+  validateImageSignature,
   async (req, res) => {
 
     try {

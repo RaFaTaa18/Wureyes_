@@ -1,11 +1,18 @@
 import express from "express";
 import pool from "../db.js";
+import { createRateLimiter } from "../middlware/rateLimit.js";
 import {
   authenticateToken,
   requireAdmin,
 } from "../middlware/auth.js";
 
 const router = express.Router();
+
+const messageSubmissionRateLimit = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 5,
+  message: "Terlalu banyak pengiriman pesan. Silakan coba lagi dalam 15 menit.",
+});
 
 // GET semua pesan
 router.get(
@@ -42,19 +49,30 @@ router.get(
 });
 
 // POST pesan baru
-router.post("/", async (req, res) => {
+router.post("/", messageSubmissionRateLimit, async (req, res) => {
   try {
-    const {
-      name,
-      email,
-      subject,
-      message,
-    } = req.body;
+    const body = req.body ?? {};
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    const subject = typeof body.subject === "string" ? body.subject.trim() : "";
+    const message = typeof body.message === "string" ? body.message.trim() : "";
 
     if (!name || !email || !message) {
       return res.status(400).json({
         success: false,
         message: "name, email, and message are required",
+      });
+    }
+
+    if (
+      name.length > 120 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 ||
+      subject.length > 150 ||
+      message.length > 3000
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Periksa format email dan panjang nama, subjek, serta pesan.",
       });
     }
 

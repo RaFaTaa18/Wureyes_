@@ -1,9 +1,10 @@
 import express from "express";
 import pool from "../db.js";
+import { authenticateToken } from "../middlware/auth.js";
 
 const router = express.Router();
 
-router.get("/stats", async (req, res) => {
+router.get("/stats", authenticateToken, async (req, res) => {
   try {
     const [
       [portfolioRows],
@@ -51,7 +52,6 @@ router.get("/stats", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to load dashboard statistics",
-      error: error instanceof Error ? error.message : String(error),
     });
   }
 });

@@ -20,17 +20,14 @@ interface Photo {
 }
 
 interface SelectedPhoto {
-  id: string;
+  file_id: string;
   file_name: string;
 }
 
 interface GalleryData {
   booking_id: number;
   client_name: string;
-  email: string;
-  phone: string;
   event_date: string;
-  location: string | null;
   service_name: string;
   status: string;
   files: Photo[];
@@ -108,7 +105,7 @@ export default function PhotoSelection() {
 
         setSelected(
           (data.selected || []).map(
-            (photo) => String(photo.id)
+            (photo) => String(photo.file_id)
           )
         );
       } catch (err) {
@@ -129,6 +126,12 @@ export default function PhotoSelection() {
 
   function togglePhoto(id: string) {
     setSuccess("");
+    setError("");
+
+    if (!selected.includes(id) && selected.length >= 100) {
+      setError("Maksimal 100 foto dapat dipilih dalam satu pengiriman.");
+      return;
+    }
 
     setSelected((current) => {
       if (current.includes(id)) {

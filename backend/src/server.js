@@ -5,6 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 import pool from "./db.js";
+import { authenticateToken, requireAdmin } from "./middlware/auth.js";
 
 import portfolioRoutes from "./routes/portfolio.js";
 import servicesRoutes from "./routes/services.js";
@@ -20,21 +21,48 @@ import dashboardRoutes from "./routes/dashboard.js";
 dotenv.config();
 
 const app = express();
+
+// Trust only local reverse proxies (Nginx on this VPS) for client IP forwarding.
+app.set("trust proxy", "loopback");
+
+const allowedOrigins = new Set([
+  "https://wureyes.link",
+  "https://www.wureyes.link",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:4173",
+  "http://127.0.0.1:4173",
+]);
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 app.use(
   "/uploads",
-  express.static(
-    path.join(__dirname, "../uploads")
-  )
+  express.static(path.join(__dirname, "../uploads"), {
+    dotfiles: "deny",
+    index: false,
+  })
 );
 
-app.use(cors());
-app.use(express.json());
+app.use(
+  cors({
+    origin(origin, callback) {
+      // Requests without an Origin header (e.g. server-to-server) are not browser CORS requests.
+      if (!origin || allowedOrigins.has(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(null, false);
+    },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    optionsSuccessStatus: 204,
+  })
+);
+app.use(express.json({ limit: "1mb" }));
 
 app.use("/api/auth", authRoutes);
-
 app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/services", servicesRoutes);
 app.use("/api/bookings", bookingsRoutes);
@@ -42,7 +70,7 @@ app.use("/api/messages", messagesRoutes);
 app.use("/api/testimonials", testimonialsRoutes);
 app.use("/api/categories", categoriesRoutes);
 app.use("/api/google-drive", googleDriveRoutes);
-app.use( "/api/photo-selection", photoSelectionRoutes);
+app.use("/api/photo-selection", photoSelectionRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 
 app.get("/", (req, res) => {
@@ -51,27 +79,29 @@ app.get("/", (req, res) => {
   });
 });
 
-app.get("/api/test-db", async (req, res) => {
-  try {
-    const [rows] = await pool.query(
-      "SELECT 1 AS connected"
-    );
+// Restrict database health checks to authenticated administrators.
+app.get(
+  "/api/test-db",
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      await pool.query("SELECT 1");
 
-    res.json({
-      success: true,
-      message: "Database connected successfully",
-      data: rows,
-    });
-  } catch (error) {
-    console.error("Database error:", error);
+      return res.json({
+        success: true,
+        message: "Database connected successfully",
+      });
+    } catch (error) {
+      console.error("Database health check failed:", error);
 
-    res.status(500).json({
-      success: false,
-      message: "Database connection failed",
-      error: error.message,
-    });
+      return res.status(500).json({
+        success: false,
+        message: "Database connection failed",
+      });
+    }
   }
-});
+);
 
 const PORT = process.env.PORT || 5000;
 
