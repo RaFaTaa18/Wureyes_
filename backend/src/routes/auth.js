@@ -3,19 +3,35 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import pool from "../db.js";
 import { authenticateToken } from "../middlware/auth.js";
+import { createRateLimiter } from "../middlware/rateLimit.js";
 
 const router = express.Router();
 
-router.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
+const loginRateLimit = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 10,
+  message: "Too many login attempts. Please try again in 15 minutes.",
+});
 
-    if (!email || !password) {
+router.post("/login", loginRateLimit, async (req, res) => {
+  try {
+    const { email, password } = req.body ?? {};
+
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      !email.trim() ||
+      !password ||
+      email.length > 254 ||
+      password.length > 1024
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Email and password are required",
+        message: "A valid email and password are required",
       });
     }
+
+    const normalizedEmail = email.trim().toLowerCase();
 
     const [users] = await pool.query(
       `
@@ -29,7 +45,7 @@ router.post("/login", async (req, res) => {
       WHERE email = ?
       LIMIT 1
       `,
-      [email]
+      [normalizedEmail]
     );
 
     if (users.length === 0) {
@@ -72,7 +88,7 @@ router.post("/login", async (req, res) => {
       }
     );
 
-    res.json({
+    return res.json({
       success: true,
       message: "Login successful",
       data: {
@@ -88,7 +104,7 @@ router.post("/login", async (req, res) => {
   } catch (error) {
     console.error("Login error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Login failed",
     });
@@ -185,6 +201,5 @@ router.post(
     }
   }
 );
-
 
 export default router;
