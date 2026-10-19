@@ -128,16 +128,16 @@ export default function PhotoSelection() {
     setSuccess("");
     setError("");
 
+    if (!selected.includes(id) && selected.length >= 100) {
+      setError("Maksimal 100 foto dapat dipilih dalam satu pengiriman.");
+      return;
+    }
+
     setSelected((current) => {
       if (current.includes(id)) {
         return current.filter(
           (item) => item !== id
         );
-      }
-
-      if (current.length >= 100) {
-        setError("Maksimal 100 foto dapat dipilih dalam satu pengiriman.");
-        return current;
       }
 
       return [...current, id];
