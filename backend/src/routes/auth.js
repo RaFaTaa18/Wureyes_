@@ -2,6 +2,7 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import pool from "../db.js";
+import { authenticateToken } from "../middlware/auth.js";
 
 const router = express.Router();
 
@@ -94,79 +95,96 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.post("/change-password", async (req, res) => {
-  try {
-    const { email, currentPassword, newPassword } = req.body;
+router.post(
+  "/change-password",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body ?? {};
+      const userId = req.user?.id;
 
-    if (!email || !currentPassword || !newPassword) {
-      return res.status(400).json({
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: "Authentication is required",
+        });
+      }
+
+      if (
+        typeof currentPassword !== "string" ||
+        typeof newPassword !== "string" ||
+        !currentPassword ||
+        !newPassword
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Current password and new password are required",
+        });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({
+          success: false,
+          message: "New password must be at least 8 characters",
+        });
+      }
+
+      const [users] = await pool.query(
+        `
+        SELECT id, password
+        FROM users
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [userId]
+      );
+
+      if (users.length === 0) {
+        return res.status(401).json({
+          success: false,
+          message: "Authenticated user was not found",
+        });
+      }
+
+      const user = users[0];
+
+      const passwordMatch = await bcrypt.compare(
+        currentPassword,
+        user.password
+      );
+
+      if (!passwordMatch) {
+        return res.status(401).json({
+          success: false,
+          message: "Current password is incorrect",
+        });
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+      await pool.query(
+        `
+        UPDATE users
+        SET password = ?
+        WHERE id = ?
+        `,
+        [hashedPassword, user.id]
+      );
+
+      return res.json({
+        success: true,
+        message: "Password changed successfully",
+      });
+    } catch (error) {
+      console.error("Change password error:", error);
+
+      return res.status(500).json({
         success: false,
-        message: "Email, current password, and new password are required",
+        message: "Failed to change password",
       });
     }
-
-    if (newPassword.length < 8) {
-      return res.status(400).json({
-        success: false,
-        message: "New password must be at least 8 characters",
-      });
-    }
-
-    const [users] = await pool.query(
-      `
-      SELECT id, email, password
-      FROM users
-      WHERE email = ?
-      LIMIT 1
-      `,
-      [email]
-    );
-
-    if (users.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    const user = users[0];
-
-    const passwordMatch = await bcrypt.compare(
-      currentPassword,
-      user.password
-    );
-
-    if (!passwordMatch) {
-      return res.status(401).json({
-        success: false,
-        message: "Current password is incorrect",
-      });
-    }
-
-    const hashedPassword = await bcrypt.hash(newPassword, 12);
-
-    await pool.query(
-      `
-      UPDATE users
-      SET password = ?
-      WHERE id = ?
-      `,
-      [hashedPassword, user.id]
-    );
-
-    res.json({
-      success: true,
-      message: "Password changed successfully",
-    });
-  } catch (error) {
-    console.error("Change password error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to change password",
-    });
   }
-});
+);
 
 
 export default router;
