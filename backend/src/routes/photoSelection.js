@@ -2,6 +2,7 @@ import express from "express";
 import crypto from "crypto";
 
 import pool from "../db.js";
+import { createRateLimiter } from "../middlware/rateLimit.js";
 
 import {
   authenticateToken,
@@ -9,6 +10,12 @@ import {
 } from "../middlware/auth.js";
 
 const router = express.Router();
+
+const photoGalleryRateLimit = createRateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 30,
+  message: "Terlalu banyak permintaan galeri. Silakan coba lagi sebentar.",
+});
 
 // =====================================================
 // HELPER - EXTRACT GOOGLE DRIVE FOLDER ID
@@ -69,7 +76,9 @@ async function getDriveFiles(folderId) {
     `&pageSize=1000` +
     `&orderBy=name`;
 
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    signal: AbortSignal.timeout(10000),
+  });
 
   const result = await response.json();
 
@@ -435,9 +444,17 @@ router.post(
 
 router.get(
   "/:token",
+  photoGalleryRateLimit,
   async (req, res) => {
     try {
       const { token } = req.params;
+
+      if (typeof token !== "string" || !/^[a-f0-9]{64}$/i.test(token)) {
+        return res.status(404).json({
+          success: false,
+          message: "Photo selection link not found",
+        });
+      }
 
       const [rows] = await pool.query(
         `
@@ -594,9 +611,7 @@ router.get(
 
       res.status(500).json({
         success: false,
-        message:
-          error.message ||
-          "Failed to load photo gallery",
+        message: "Failed to load photo gallery",
       });
     }
   }
@@ -608,6 +623,7 @@ router.get(
 
 router.post(
   "/:token",
+  photoGalleryRateLimit,
   async (req, res) => {
     let connection;
     let transactionStarted = false;
