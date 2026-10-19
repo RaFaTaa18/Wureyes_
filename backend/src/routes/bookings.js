@@ -14,6 +14,24 @@ const bookingSubmissionRateLimit = createRateLimiter({
   message: "Terlalu banyak pengiriman booking. Silakan coba lagi dalam 15 menit.",
 });
 
+function isValidCalendarDate(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+  if (year < 1000 || month < 1 || month > 12 || day < 1 || day > 31) {
+    return false;
+  }
+
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return (
+    parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day
+  );
+}
+
 // ===============================
 // GET BOOKINGS - ADMIN ONLY
 // ===============================
@@ -104,7 +122,7 @@ router.post("/", bookingSubmissionRateLimit, async (req, res) => {
       client_name.length > 120 ||
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 ||
       phone.length > 30 ||
-      !/^\d{4}-\d{2}-\d{2}$/.test(event_date) ||
+      !isValidCalendarDate(event_date) ||
       (location && location.length > 255) ||
       (message && message.length > 2000)
     ) {
