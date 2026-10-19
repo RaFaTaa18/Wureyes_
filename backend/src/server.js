@@ -20,6 +20,9 @@ import dashboardRoutes from "./routes/dashboard.js";
 dotenv.config();
 
 const app = express();
+
+// Trust only local reverse proxies (Nginx on this VPS) for client IP forwarding.
+app.set("trust proxy", "loopback");
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
