@@ -19,7 +19,12 @@ const storage = multer.diskStorage({
   },
 
   filename: (_req, file, cb) => {
-    const extension = path.extname(file.originalname).toLowerCase();
+    const extensions = {
+      "image/jpeg": ".jpg",
+      "image/png": ".png",
+      "image/webp": ".webp",
+    };
+    const extension = extensions[file.mimetype];
 
     const filename =
       `${Date.now()}-${Math.round(Math.random() * 1e9)}${extension}`;
