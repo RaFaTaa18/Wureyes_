@@ -1635,6 +1635,7 @@
 
 .edit-booking-modal {
   position: fixed;
+  box-sizing: border-box;
   width: min(720px, calc(100vw - 24px));
   max-height: calc(100vh - 36px);
 
@@ -2118,7 +2119,9 @@
 
 .receipt-modal {
   position: fixed;
+  box-sizing: border-box;
   width: min(680px, calc(100vw - 24px));
+  height: min(720px, calc(100vh - 36px));
   max-height: calc(100vh - 36px);
 
   display: flex;
@@ -2134,8 +2137,8 @@
 }
 
 .payment-receipt {
-  flex: 1;
-  min-height: 0;
+  flex: 1 1 auto;
+  min-height: 280px;
   overflow-y: auto;
 
   margin: 24px;
