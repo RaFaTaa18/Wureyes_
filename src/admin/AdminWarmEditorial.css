@@ -426,3 +426,51 @@
     animation: none;
   }
 }
+
+
+/* Smooth editorial fade transitions for the admin workspace */
+@keyframes admin-page-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.admin-main > header.admin-header {
+  animation: admin-page-fade-in .45s cubic-bezier(.22, 1, .36, 1) both;
+}
+.admin-main > .admin-loading,
+.admin-main > :is(.admin-portfolio,.portfolio-admin,.services-admin,.messages-admin) {
+  animation: admin-page-fade-in .45s cubic-bezier(.22, 1, .36, 1) both;
+}
+.dashboard-hero,
+.dashboard-kpis,
+.dashboard-content-grid {
+  animation: admin-page-fade-in .55s cubic-bezier(.22, 1, .36, 1) both;
+}
+.dashboard-kpis { animation-delay: .06s; }
+.dashboard-content-grid { animation-delay: .12s; }
+.dashboard-panel,
+.dashboard-kpi {
+  transition:
+    background-color .35s cubic-bezier(.22, 1, .36, 1),
+    border-color .35s cubic-bezier(.22, 1, .36, 1),
+    box-shadow .35s cubic-bezier(.22, 1, .36, 1),
+    transform .35s cubic-bezier(.22, 1, .36, 1);
+}
+.dashboard-kpi:hover {
+  transform: translateY(-2px);
+  border-color: #d2b89e;
+  box-shadow: 0 8px 20px rgba(74, 52, 39, .07);
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-main > header.admin-header,
+  .admin-main > .admin-loading,
+  .admin-main > :is(.admin-portfolio,.portfolio-admin,.services-admin,.messages-admin),
+  .dashboard-hero,
+  .dashboard-kpis,
+  .dashboard-content-grid {
+    animation: none;
+  }
+  .dashboard-panel,
+  .dashboard-kpi {
+    transition: none;
+  }
+}
