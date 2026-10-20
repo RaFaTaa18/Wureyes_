@@ -56,6 +56,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] =
     useState(true);
   const [selectedRevenueYear, setSelectedRevenueYear] = useState(new Date().getFullYear());
+  const [selectedRevenueMonth, setSelectedRevenueMonth] = useState<number | null>(null);
 
   useEffect(() => {
     const token =
@@ -162,6 +163,13 @@ export default function AdminDashboard() {
     const date = new Date(value.length === 10 ? value + "T00:00:00" : value);
     return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric" }).format(date);
   };
+  const selectedMonthDetails = selectedRevenueMonth === null ? [] : bookings.filter((booking) => {
+    if (booking.payment_status !== "paid" || !booking.payment_date) return false;
+    const paymentDate = String(booking.payment_date).slice(0, 10);
+    const year = Number(paymentDate.slice(0, 4));
+    const month = Number(paymentDate.slice(5, 7)) - 1;
+    return year === selectedRevenueYear && month === selectedRevenueMonth && Number(booking.payment_amount ?? 0) > 0;
+  }).sort((a, b) => String(a.payment_date ?? "").slice(0, 10).localeCompare(String(b.payment_date ?? "").slice(0, 10)));
   const totalRevenue = monthlyRevenue.reduce((sum, item) => sum + item.total, 0);
   const maxRevenue = Math.max(...monthlyRevenue.map((item) => item.total), 1);
 
@@ -286,10 +294,15 @@ export default function AdminDashboard() {
                     <div className="dashboard-panel-foot"><span>{stats?.pendingBookings ?? 0} booking pending</span><button onClick={() => setActivePage("bookings")}>Manage bookings ↗</button></div>
                   </article>
                   <article className="dashboard-panel revenue-panel">
-                    <div className="dashboard-panel-heading"><div><p className="dashboard-eyebrow">PAID PAYMENTS</p><h3>Monthly Revenue</h3></div><label className="revenue-year-picker"><span>Tahun</span><select aria-label="Pilih tahun pendapatan" value={selectedRevenueYear} onChange={(event) => setSelectedRevenueYear(Number(event.target.value))}>{revenueYears.map((year) => <option key={year} value={year}>{year}</option>)}</select></label></div>
+                    <div className="dashboard-panel-heading"><div><p className="dashboard-eyebrow">PAID PAYMENTS</p><h3>Monthly Revenue</h3></div><label className="revenue-year-picker"><span>Tahun</span><select aria-label="Pilih tahun pendapatan" value={selectedRevenueYear} onChange={(event) => { setSelectedRevenueYear(Number(event.target.value)); setSelectedRevenueMonth(null); }}>{revenueYears.map((year) => <option key={year} value={year}>{year}</option>)}</select></label></div>
                     <div className="revenue-total">{formatMoney(totalRevenue)}<span>Total pendapatan tahun {selectedRevenueYear}</span></div>
-                    <div className="revenue-chart" role="img" aria-label="Grafik pendapatan bulanan dari pembayaran tercatat">{monthlyRevenue.map((item) => <div className="revenue-bar-column" key={item.month} title={item.month + ": " + formatMoney(item.total)}><div className="revenue-bar-track"><div className="revenue-bar" style={{ height: (item.total ? Math.max(4, item.total / maxRevenue * 100) : 0) + "%" }} /></div><small>{item.month}</small></div>)}</div>
-                    <div className="revenue-month-details">{monthlyRevenue.map((item) => <div key={item.month}><span>{item.month}</span><strong>{formatMoney(item.total)}</strong></div>)}</div>
+                    <div className="revenue-chart" aria-label="Grafik pendapatan bulanan">{monthlyRevenue.map((item, index) => <button type="button" className={"revenue-bar-column" + (selectedRevenueMonth === index ? " is-selected" : "")} key={item.month} title={item.month + ": " + formatMoney(item.total)} aria-label={"Lihat rincian pendapatan " + item.month + " " + selectedRevenueYear} aria-pressed={selectedRevenueMonth === index} onClick={() => setSelectedRevenueMonth(index)}><span className="revenue-bar-track"><span className="revenue-bar" style={{ height: (item.total ? Math.max(4, item.total / maxRevenue * 100) : 0) + "%" }} /></span><small>{item.month}</small></button>)}</div>
+                    <div className="revenue-month-details">{monthlyRevenue.map((item, index) => <button type="button" className={selectedRevenueMonth === index ? "is-selected" : ""} key={item.month} aria-pressed={selectedRevenueMonth === index} onClick={() => setSelectedRevenueMonth(index)}><span>{item.month}</span><strong>{formatMoney(item.total)}</strong></button>)}</div>
+                    {selectedRevenueMonth !== null && <section className="revenue-detail-panel" aria-live="polite">
+                      <div className="revenue-detail-heading"><div><p className="dashboard-eyebrow">PAYMENT BREAKDOWN</p><h4>Rincian {monthlyRevenue[selectedRevenueMonth].month} {selectedRevenueYear}</h4></div><button type="button" className="revenue-detail-close" onClick={() => setSelectedRevenueMonth(null)} aria-label="Tutup rincian pendapatan">×</button></div>
+                      <p className="revenue-detail-total">Total: <strong>{formatMoney(monthlyRevenue[selectedRevenueMonth].total)}</strong></p>
+                      {selectedMonthDetails.length === 0 ? <p className="dashboard-empty">Tidak ada pembayaran berstatus paid pada bulan ini.</p> : <div className="revenue-detail-list">{selectedMonthDetails.map((booking) => <article className="revenue-detail-item" key={booking.id}><div><strong>{booking.service_name || "Service tidak tercantum"}</strong><span>{booking.client_name}</span><small>Tanggal pembayaran: {formatDate(String(booking.payment_date))}</small></div><b>{formatMoney(Number(booking.payment_amount ?? 0))}</b></article>)}</div>}
+                    </section>}
                     <p className="revenue-footnote">Pendapatan dihitung dari pembayaran berstatus paid berdasarkan tanggal pembayaran. Pilih tahun untuk melihat rincian per bulan.</p>
                   </article>
                   <article className="dashboard-panel quick-actions-panel">
