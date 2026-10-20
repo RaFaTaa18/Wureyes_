@@ -224,3 +224,12 @@
   .dashboard-kpi { align-items: center; }
   .dashboard-kpi small { min-height: 0; }
 }
+
+/* Revenue year selector and month-by-month paid totals */
+.revenue-year-picker { display: flex; align-items: center; gap: 7px; color: #8c755e; font-size: 9px; font-weight: 700; }
+.revenue-year-picker select { max-width: 105px; padding: 7px 9px; border: 1px solid #e5d7c7; border-radius: 8px; background: #fffaf3; color: #503a2a; font: 600 10px Inter, sans-serif; cursor: pointer; }
+.revenue-month-details { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: 16px; }
+.revenue-month-details > div { min-width: 0; display: flex; flex-direction: column; gap: 5px; padding: 9px 10px; border: 1px solid #eee4d8; border-radius: 8px; background: #fffdf9; }
+.revenue-month-details span { color: #9a8978; font-size: 9px; }
+.revenue-month-details strong { overflow-wrap: anywhere; color: #503a2a; font-size: 10px; font-weight: 700; }
+@media (max-width: 480px) { .revenue-month-details { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
