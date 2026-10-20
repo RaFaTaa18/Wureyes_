@@ -1623,11 +1623,9 @@
   inset: 0;
   z-index: 100000;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
 
-  padding: 24px;
+  padding: 0;
   box-sizing: border-box;
 
   background: rgba(24, 22, 19, 0.62);
@@ -1636,8 +1634,9 @@
 }
 
 .edit-booking-modal {
-  width: min(720px, 100%);
-  max-height: calc(100vh - 48px);
+  position: fixed;
+  width: min(720px, calc(100vw - 24px));
+  max-height: calc(100vh - 36px);
 
   display: flex;
   flex-direction: column;
@@ -2108,11 +2107,9 @@
   inset: 0;
   z-index: 9999;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
 
-  padding: 24px;
+  padding: 0;
 
   background: rgba(25, 25, 25, 0.55);
 
@@ -2120,8 +2117,9 @@
 }
 
 .receipt-modal {
-  width: min(680px, 100%);
-  max-height: calc(100vh - 48px);
+  position: fixed;
+  width: min(680px, calc(100vw - 24px));
+  max-height: calc(100vh - 36px);
 
   display: flex;
   flex-direction: column;
