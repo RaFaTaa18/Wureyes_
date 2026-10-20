@@ -634,3 +634,99 @@
     font-size: 34px !important;
   }
 }
+
+
+/* Compact admin account chip inspired by the supplied Uiverse button. */
+.admin-dashboard .admin-user-chip {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex: 0 0 auto;
+  max-width: min(100%, 330px);
+  min-width: 0;
+  padding: 8px 14px 8px 8px;
+  border: 1px solid #e5d7c7;
+  border-radius: 999px;
+  background: rgba(255, 250, 243, .88);
+  color: #34271f;
+  box-shadow: 0 4px 14px rgba(68,44,25,.045);
+  transition: border-color .22s ease, background .22s ease, box-shadow .22s ease, transform .22s ease;
+}
+.admin-dashboard .admin-user-chip:hover {
+  border-color: #cdb49a;
+  background: #fffaf3;
+  box-shadow: 0 7px 20px rgba(68,44,25,.09);
+  transform: translateY(-1px);
+}
+.admin-dashboard .admin-user-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #4a3427;
+  color: #f8ebdc;
+}
+.admin-dashboard .admin-user-avatar svg {
+  display: block;
+  width: 21px;
+  height: 21px;
+  fill: currentColor;
+}
+.admin-dashboard .admin-user-status {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 9px;
+  height: 9px;
+  border: 2px solid #fffaf3;
+  border-radius: 50%;
+  background: #7d9b70;
+}
+.admin-dashboard .admin-user-chip-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  line-height: 1.25;
+}
+.admin-dashboard .admin-user-chip-content strong {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #34271f;
+  font-size: 12px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-dashboard .admin-user-chip-content .admin-user-email {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #88786a;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-dashboard .admin-user-chip-content .admin-user-role {
+  display: block;
+  color: #9b704e;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1.7px;
+  text-transform: uppercase;
+}
+@media (max-width: 750px) {
+  .admin-dashboard .admin-user-chip {
+    max-width: 100%;
+    align-self: flex-start;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-dashboard .admin-user-chip { transition: none; }
+}
