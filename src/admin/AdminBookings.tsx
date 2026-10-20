@@ -1,4 +1,4 @@
-﻿  import { useEffect, useMemo, useState, type MouseEvent } from "react";
+﻿  import { useEffect, useMemo, useState } from "react";
   import "./AdminBookings.css";
 
   interface Booking {
@@ -136,10 +136,6 @@
 
     const [receiptBooking, setReceiptBooking] =
     useState<Booking | null>(null);
-
-  function positionModalNear(_target: HTMLElement, _modalWidth: number) {
-    // Keep dialogs at the top-center; never derive their height from the clicked card.
-  }
 
     const [selectionData, setSelectionData] =
       useState<SelectionData | null>(null);
@@ -302,8 +298,7 @@ setReceiptBooking((current) => {
     loadServices();
   }, []);
 
-    function openEditBooking(booking: Booking, event: MouseEvent<HTMLButtonElement>) {
-    positionModalNear(event.currentTarget, 720);
+    function openEditBooking(booking: Booking) {
     setReceiptBooking(null);
     setEditingBooking(booking);
 
@@ -989,7 +984,6 @@ const amount =
         setError("");
         setSelectionData(null);
         setSelectedBooking(bookingId);
-        window.scrollTo({ top: 0, behavior: "smooth" });
 
         const response = await fetch(
           `${API_URL}/api/photo-selection/admin/bookings/${bookingId}/selections`,
@@ -2218,7 +2212,7 @@ const amount =
     type="button"
     className="booking-edit-button"
     onClick={(event) =>
-      openEditBooking(booking, event)
+      openEditBooking(booking)
     }
   >
     ✎ Edit
@@ -2227,11 +2221,7 @@ const amount =
   <button
     type="button"
     className="booking-receipt-button"
-    onClick={(event) => {
-      positionModalNear(event.currentTarget, 680);
-      setEditingBooking(null);
-      setReceiptBooking(booking);
-    }}
+    onClick={() => setReceiptBooking(booking)}
   >
     ⎙ Nota Pembayaran
   </button>
