@@ -1,4 +1,4 @@
-﻿  import { useEffect, useMemo, useState } from "react";
+﻿  import { useEffect, useMemo, useState, type MouseEvent } from "react";
   import "./AdminBookings.css";
 
   interface Booking {
@@ -136,6 +136,24 @@
 
     const [receiptBooking, setReceiptBooking] =
     useState<Booking | null>(null);
+
+  const [modalPosition, setModalPosition] = useState({ top: 24, left: 24 });
+
+  function positionModalNear(target: HTMLElement, modalWidth: number) {
+    const rect = target.getBoundingClientRect();
+    const margin = 12;
+    const availableWidth = Math.min(modalWidth, window.innerWidth - margin * 2);
+    const left = Math.max(
+      margin,
+      Math.min(rect.left, window.innerWidth - availableWidth - margin)
+    );
+    const top = Math.max(
+      margin,
+      Math.min(rect.top - 12, window.innerHeight - 180)
+    );
+
+    setModalPosition({ top, left });
+  }
 
     const [selectionData, setSelectionData] =
       useState<SelectionData | null>(null);
@@ -298,7 +316,9 @@ setReceiptBooking((current) => {
     loadServices();
   }, []);
 
-    function openEditBooking(booking: Booking) {
+    function openEditBooking(booking: Booking, event: MouseEvent<HTMLButtonElement>) {
+    positionModalNear(event.currentTarget, 720);
+    setReceiptBooking(null);
     setEditingBooking(booking);
 
     setEditForm({
@@ -2211,7 +2231,7 @@ const amount =
     type="button"
     className="booking-edit-button"
     onClick={() =>
-      openEditBooking(booking)
+      openEditBooking(booking, event)
     }
   >
     ✎ Edit
@@ -2220,7 +2240,11 @@ const amount =
   <button
     type="button"
     className="booking-receipt-button"
-    onClick={() => setReceiptBooking(booking)}
+    onClick={(event) => {
+      positionModalNear(event.currentTarget, 680);
+      setEditingBooking(null);
+      setReceiptBooking(booking);
+    }}
   >
     ⎙ Nota Pembayaran
   </button>
@@ -2287,6 +2311,7 @@ const amount =
     >
       <div
         className="receipt-modal"
+        style={{ top: modalPosition.top, left: modalPosition.left, maxHeight: `calc(100vh - ${modalPosition.top + 24}px)` }}
         onClick={(event) =>
           event.stopPropagation()
         }
@@ -2729,6 +2754,7 @@ const amount =
     >
       <div
         className="edit-booking-modal"
+        style={{ top: modalPosition.top, left: modalPosition.left, maxHeight: `calc(100vh - ${modalPosition.top + 24}px)` }}
         onClick={(event) =>
           event.stopPropagation()
         }
