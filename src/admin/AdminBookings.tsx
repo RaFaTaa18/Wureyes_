@@ -989,6 +989,7 @@ const amount =
         setError("");
         setSelectionData(null);
         setSelectedBooking(bookingId);
+        window.scrollTo({ top: 0, behavior: "smooth" });
 
         const response = await fetch(
           `${API_URL}/api/photo-selection/admin/bookings/${bookingId}/selections`,
