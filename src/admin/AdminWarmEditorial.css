@@ -296,3 +296,42 @@
     transition: none;
   }
 }
+
+
+/* Monthly revenue tiles — smooth hover inspired by the public Wureyes navbar */
+.revenue-month-details > div {
+  position: relative;
+  overflow: hidden;
+  transition:
+    background-color .3s ease,
+    border-color .3s ease,
+    color .3s ease,
+    transform .3s cubic-bezier(.22, 1, .36, 1),
+    box-shadow .3s ease;
+}
+.revenue-month-details > div:hover,
+.revenue-month-details > div:focus-within {
+  transform: translateY(-2px);
+  border-color: #b58b65;
+  background: #f4e8da;
+  box-shadow: 0 6px 15px rgba(74, 52, 39, .09);
+}
+.revenue-month-details > div span,
+.revenue-month-details > div strong {
+  transition: color .3s ease;
+}
+.revenue-month-details > div:hover span,
+.revenue-month-details > div:focus-within span {
+  color: #80583b;
+}
+.revenue-month-details > div:hover strong,
+.revenue-month-details > div:focus-within strong {
+  color: #2b211a;
+}
+@media (prefers-reduced-motion: reduce) {
+  .revenue-month-details > div,
+  .revenue-month-details > div span,
+  .revenue-month-details > div strong {
+    transition: none;
+  }
+}
