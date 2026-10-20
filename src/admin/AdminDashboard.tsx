@@ -128,7 +128,7 @@ export default function AdminDashboard() {
     loadDashboard();
   }, [navigate]);
 
-  const recentBookings = useMemo(() => [...bookings].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 4), [bookings]);
+  const recentBookings = useMemo(() => [...bookings].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()), [bookings]);
   const monthlyRevenue = useMemo(() => {
     const year = new Date().getFullYear();
     const names = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
