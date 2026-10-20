@@ -7,6 +7,7 @@ import AdminBookings from "./AdminBookings";
 import AdminMessages from "./AdminMessages";
 
 import "./AdminDashboard.css";
+import "./AdminWarmEditorial.css";
 
 interface DashboardStats {
   portfolio: number;
@@ -118,10 +119,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="admin-dashboard">
-
-      {/* SIDEBAR */}
       <aside className="admin-sidebar">
-
         <div className="admin-logo">
           WUREYES<span>_</span>
         </div>
@@ -131,47 +129,45 @@ export default function AdminDashboard() {
         </p>
 
         <nav>
-
           <button
-            onClick={() =>
-              setActivePage("dashboard")
-            }
+            className={activePage === "dashboard" ? "active" : ""}
+            aria-current={activePage === "dashboard" ? "page" : undefined}
+            onClick={() => setActivePage("dashboard")}
           >
             Dashboard
           </button>
 
           <button
-            onClick={() =>
-              setActivePage("portfolio")
-            }
+            className={activePage === "portfolio" ? "active" : ""}
+            aria-current={activePage === "portfolio" ? "page" : undefined}
+            onClick={() => setActivePage("portfolio")}
           >
             Portfolio
           </button>
 
           <button
-            onClick={() =>
-              setActivePage("services")
-            }
+            className={activePage === "services" ? "active" : ""}
+            aria-current={activePage === "services" ? "page" : undefined}
+            onClick={() => setActivePage("services")}
           >
             Services
           </button>
 
           <button
-            onClick={() =>
-              setActivePage("bookings")
-            }
+            className={activePage === "bookings" ? "active" : ""}
+            aria-current={activePage === "bookings" ? "page" : undefined}
+            onClick={() => setActivePage("bookings")}
           >
             Bookings
           </button>
 
           <button
-            onClick={() =>
-              setActivePage("messages")
-            }
+            className={activePage === "messages" ? "active" : ""}
+            aria-current={activePage === "messages" ? "page" : undefined}
+            onClick={() => setActivePage("messages")}
           >
             Messages
           </button>
-
         </nav>
 
         <button
@@ -180,216 +176,92 @@ export default function AdminDashboard() {
         >
           Logout
         </button>
-
       </aside>
 
-
-      {/* MAIN CONTENT */}
       <main className="admin-main">
-
-        {/* HEADER */}
         <header className="admin-header">
-
           <div>
-            <p>
-              WUREYES ADMIN
-            </p>
-
+            <p>WUREYES ADMIN</p>
             <h1>
-              {activePage === "dashboard" &&
-                "Dashboard"}
-
-              {activePage === "portfolio" &&
-                "Portfolio"}
-
-              {activePage === "services" &&
-                "Services"}
-
-              {activePage === "bookings" &&
-                "Bookings"}
-
-              {activePage === "messages" &&
-                "Messages"}
+              {activePage === "dashboard" && "Dashboard"}
+              {activePage === "portfolio" && "Portfolio"}
+              {activePage === "services" && "Services"}
+              {activePage === "bookings" && "Bookings"}
+              {activePage === "messages" && "Messages"}
             </h1>
           </div>
 
           {user && (
             <div className="admin-user">
-              <strong>
-                {user.name}
-              </strong>
-
-              <span>
-                {user.email}
-              </span>
-
-              <span>
-                {user.role}
-              </span>
+              <strong>{user.name}</strong>
+              <span>{user.email}</span>
+              <span>{user.role}</span>
             </div>
           )}
-
         </header>
 
-
-        {/* LOADING */}
         {loading ? (
-
           <div className="admin-loading">
             Loading dashboard...
           </div>
-
         ) : (
-
           <>
-
-            {/* =========================
-                DASHBOARD
-            ========================== */}
-
             {activePage === "dashboard" && (
-
               <>
-
                 <section className="admin-stats">
-
                   <div className="stat-card">
-                    <span>
-                      PORTFOLIO
-                    </span>
-
-                    <strong>
-                      {stats?.portfolio ?? 0}
-                    </strong>
+                    <span>PORTFOLIO</span>
+                    <strong>{stats?.portfolio ?? 0}</strong>
                   </div>
 
-
                   <div className="stat-card">
-                    <span>
-                      SERVICES
-                    </span>
-
-                    <strong>
-                      {stats?.services ?? 0}
-                    </strong>
+                    <span>SERVICES</span>
+                    <strong>{stats?.services ?? 0}</strong>
                   </div>
 
-
                   <div className="stat-card">
-                    <span>
-                      BOOKINGS
-                    </span>
-
-                    <strong>
-                      {stats?.bookings ?? 0}
-                    </strong>
+                    <span>BOOKINGS</span>
+                    <strong>{stats?.bookings ?? 0}</strong>
                   </div>
 
-
                   <div className="stat-card">
-                    <span>
-                      PENDING BOOKINGS
-                    </span>
-
-                    <strong>
-                      {stats?.pendingBookings ?? 0}
-                    </strong>
+                    <span>PENDING BOOKINGS</span>
+                    <strong>{stats?.pendingBookings ?? 0}</strong>
                   </div>
 
-
                   <div className="stat-card">
-                    <span>
-                      MESSAGES
-                    </span>
-
-                    <strong>
-                      {stats?.messages ?? 0}
-                    </strong>
+                    <span>MESSAGES</span>
+                    <strong>{stats?.messages ?? 0}</strong>
                   </div>
 
-
                   <div className="stat-card">
-                    <span>
-                      UNREAD MESSAGES
-                    </span>
-
-                    <strong>
-                      {stats?.unreadMessages ?? 0}
-                    </strong>
+                    <span>UNREAD MESSAGES</span>
+                    <strong>{stats?.unreadMessages ?? 0}</strong>
                   </div>
-
                 </section>
 
-
                 <section className="admin-welcome">
-
-                  <p>
-                    WELCOME TO WUREYES
-                  </p>
-
+                  <p>WELCOME TO WUREYES</p>
                   <h2>
                     Manage your
                     <br />
-                    <span>
-                      creative studio.
-                    </span>
+                    <span>creative studio.</span>
                   </h2>
-
                   <p>
-                    Use this dashboard to manage
-                    portfolio projects, services,
-                    bookings, and messages from
-                    your Wureyes website.
+                    Use this dashboard to manage portfolio projects,
+                    services, bookings, and messages from your Wureyes website.
                   </p>
-
                 </section>
-
               </>
-
             )}
 
-
-            {/* =========================
-                PORTFOLIO
-            ========================== */}
-
-            {activePage === "portfolio" && (
-              <AdminPortfolio />
-            )}
-
-
-            {/* =========================
-                SERVICES
-            ========================== */}
-
-            {activePage === "services" && (
-  <AdminServices />
-)}
-
-
-            {/* =========================
-                BOOKINGS
-            ========================== */}
-
-            {activePage === "bookings" && (
-  <AdminBookings />
-)}
-
-
-            {/* =========================
-                MESSAGES
-            ========================== */}
-
-            {activePage === "messages" && (
-  <AdminMessages />
-)}
-
+            {activePage === "portfolio" && <AdminPortfolio />}
+            {activePage === "services" && <AdminServices />}
+            {activePage === "bookings" && <AdminBookings />}
+            {activePage === "messages" && <AdminMessages />}
           </>
-
         )}
-
       </main>
-
     </div>
   );
 }
