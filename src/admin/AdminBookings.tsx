@@ -2230,7 +2230,7 @@ const amount =
                       <button
     type="button"
     className="booking-edit-button"
-    onClick={() =>
+    onClick={(event) =>
       openEditBooking(booking, event)
     }
   >
