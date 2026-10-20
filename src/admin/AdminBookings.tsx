@@ -139,20 +139,9 @@
 
   const [modalPosition, setModalPosition] = useState({ top: 24, left: 24 });
 
-  function positionModalNear(target: HTMLElement, modalWidth: number) {
-    const rect = target.getBoundingClientRect();
-    const margin = 12;
-    const availableWidth = Math.min(modalWidth, window.innerWidth - margin * 2);
-    const left = Math.max(
-      margin,
-      Math.min(rect.left, window.innerWidth - availableWidth - margin)
-    );
-    const top = Math.max(
-      margin,
-      Math.min(rect.top - 12, window.innerHeight - 180)
-    );
-
-    setModalPosition({ top, left });
+  function positionModalNear(_target: HTMLElement, _modalWidth: number) {
+    // Keep dialogs at the top-center; never derive their height from the clicked card.
+    setModalPosition({ top: 24, left: window.innerWidth / 2 });
   }
 
     const [selectionData, setSelectionData] =
@@ -2311,7 +2300,7 @@ const amount =
     >
       <div
         className="receipt-modal"
-        style={{ top: modalPosition.top, left: modalPosition.left, maxHeight: `calc(100vh - ${modalPosition.top + 24}px)` }}
+        style={{ top: 24, left: "50%", transform: "translateX(-50%)", maxHeight: "calc(100vh - 48px)" }}
         onClick={(event) =>
           event.stopPropagation()
         }
@@ -2754,7 +2743,7 @@ const amount =
     >
       <div
         className="edit-booking-modal"
-        style={{ top: modalPosition.top, left: modalPosition.left, maxHeight: `calc(100vh - ${modalPosition.top + 24}px)` }}
+        style={{ top: 24, left: "50%", transform: "translateX(-50%)", maxHeight: "calc(100vh - 48px)" }}
         onClick={(event) =>
           event.stopPropagation()
         }
