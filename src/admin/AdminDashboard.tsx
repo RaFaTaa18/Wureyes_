@@ -76,7 +76,7 @@ export default function AdminDashboard() {
       setUser(JSON.parse(savedUser));
     }
 
-    async function loadDashboard() {
+    async function loadDashboard(initialLoad = false) {
       try {
         const headers = { Authorization: "Bearer " + token };
         const [response, bookingsResponse] = await Promise.all([
@@ -125,11 +125,18 @@ export default function AdminDashboard() {
           error
         );
       } finally {
-        setLoading(false);
+        if (initialLoad) setLoading(false);
       }
     }
 
-    loadDashboard();
+    // Load immediately, then refresh bookings and dashboard stats every 10 seconds.
+    // This keeps Recent Bookings and the pending-booking count current without a manual reload.
+    void loadDashboard(true);
+    const refreshTimer = window.setInterval(() => {
+      void loadDashboard(false);
+    }, 10000);
+
+    return () => window.clearInterval(refreshTimer);
   }, [navigate]);
 
   const recentBookings = useMemo(() => [...bookings].sort((a, b) => {
