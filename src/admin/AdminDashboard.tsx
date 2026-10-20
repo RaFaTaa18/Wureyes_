@@ -27,6 +27,8 @@ interface Booking {
   payment_status: string;
   payment_amount: number | string | null;
   payment_date: string | null;
+  service_price: number | string | null;
+  additional_fee_amount: number | string | null;
   created_at: string;
 }
 
@@ -149,12 +151,29 @@ export default function AdminDashboard() {
   const monthlyRevenue = useMemo(() => {
     const names = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
     const values = names.map((month) => ({ month, total: 0 }));
+
     bookings.forEach((booking) => {
       if (booking.payment_status !== "paid" || !booking.payment_date) return;
-      const date = new Date(booking.payment_date.slice(0, 10) + "T00:00:00");
-      const amount = Number(booking.payment_amount ?? 0);
-      if (date.getFullYear() === selectedRevenueYear && Number.isFinite(amount) && amount > 0) values[date.getMonth()].total += amount;
+
+      // Match the invoice's TOTAL TAGIHAN: service price + additional fees.
+      const paymentDate = String(booking.payment_date).slice(0, 10);
+      const year = Number(paymentDate.slice(0, 4));
+      const month = Number(paymentDate.slice(5, 7)) - 1;
+      const invoiceTotal =
+        Number(booking.service_price ?? 0) +
+        Number(booking.additional_fee_amount ?? 0);
+
+      if (
+        year === selectedRevenueYear &&
+        month >= 0 &&
+        month < 12 &&
+        Number.isFinite(invoiceTotal) &&
+        invoiceTotal > 0
+      ) {
+        values[month].total += invoiceTotal;
+      }
     });
+
     return values;
   }, [bookings, selectedRevenueYear]);
   const formatMoney = (value: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value);
@@ -165,10 +184,20 @@ export default function AdminDashboard() {
   };
   const selectedMonthDetails = selectedRevenueMonth === null ? [] : bookings.filter((booking) => {
     if (booking.payment_status !== "paid" || !booking.payment_date) return false;
+
     const paymentDate = String(booking.payment_date).slice(0, 10);
     const year = Number(paymentDate.slice(0, 4));
     const month = Number(paymentDate.slice(5, 7)) - 1;
-    return year === selectedRevenueYear && month === selectedRevenueMonth && Number(booking.payment_amount ?? 0) > 0;
+    const invoiceTotal =
+      Number(booking.service_price ?? 0) +
+      Number(booking.additional_fee_amount ?? 0);
+
+    return (
+      year === selectedRevenueYear &&
+      month === selectedRevenueMonth &&
+      Number.isFinite(invoiceTotal) &&
+      invoiceTotal > 0
+    );
   }).sort((a, b) => String(a.payment_date ?? "").slice(0, 10).localeCompare(String(b.payment_date ?? "").slice(0, 10)));
   const totalRevenue = monthlyRevenue.reduce((sum, item) => sum + item.total, 0);
   const maxRevenue = Math.max(...monthlyRevenue.map((item) => item.total), 1);
@@ -301,9 +330,9 @@ export default function AdminDashboard() {
                     {selectedRevenueMonth !== null && <section className="revenue-detail-panel" aria-live="polite">
                       <div className="revenue-detail-heading"><div><p className="dashboard-eyebrow">PAYMENT BREAKDOWN</p><h4>Rincian {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"][selectedRevenueMonth]} {selectedRevenueYear}</h4></div><button type="button" className="revenue-detail-close" onClick={() => setSelectedRevenueMonth(null)} aria-label="Tutup rincian pendapatan">×</button></div>
                       <p className="revenue-detail-total">Total: <strong>{formatMoney(monthlyRevenue[selectedRevenueMonth].total)}</strong></p>
-                      {selectedMonthDetails.length === 0 ? <p className="dashboard-empty">Tidak ada pembayaran berstatus paid pada bulan ini.</p> : <div className="revenue-detail-list">{selectedMonthDetails.map((booking) => <article className="revenue-detail-item" key={booking.id}><div><strong>{booking.service_name || "Service tidak tercantum"}</strong><span>{booking.client_name}</span><small>Tanggal pembayaran: {formatDate(String(booking.payment_date))}</small></div><b>{formatMoney(Number(booking.payment_amount ?? 0))}</b></article>)}</div>}
+                      {selectedMonthDetails.length === 0 ? <p className="dashboard-empty">Tidak ada pembayaran berstatus paid pada bulan ini.</p> : <div className="revenue-detail-list">{selectedMonthDetails.map((booking) => <article className="revenue-detail-item" key={booking.id}><div><strong>{booking.service_name || "Service tidak tercantum"}</strong><span>{booking.client_name}</span><small>Tanggal pembayaran: {formatDate(String(booking.payment_date))}</small></div><b>{formatMoney(Number(booking.service_price ?? 0) + Number(booking.additional_fee_amount ?? 0))}</b></article>)}</div>}
                     </section>}
-                    <p className="revenue-footnote">Pendapatan dihitung dari pembayaran berstatus paid berdasarkan tanggal pembayaran. Pilih tahun untuk melihat rincian per bulan.</p>
+                    <p className="revenue-footnote">Pendapatan dihitung dari total tagihan (harga layanan + biaya tambahan) booking berstatus paid berdasarkan tanggal pembayaran. Pilih tahun untuk melihat rincian per bulan.</p>
                   </article>
                   <article className="dashboard-panel quick-actions-panel">
                     <div className="dashboard-panel-heading"><div><p className="dashboard-eyebrow">SHORTCUTS</p><h3>Quick Actions</h3></div></div>
