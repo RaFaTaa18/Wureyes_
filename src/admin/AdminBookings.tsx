@@ -137,11 +137,8 @@
     const [receiptBooking, setReceiptBooking] =
     useState<Booking | null>(null);
 
-  const [modalPosition, setModalPosition] = useState({ top: 24, left: 24 });
-
   function positionModalNear(_target: HTMLElement, _modalWidth: number) {
     // Keep dialogs at the top-center; never derive their height from the clicked card.
-    setModalPosition({ top: 24, left: window.innerWidth / 2 });
   }
 
     const [selectionData, setSelectionData] =
