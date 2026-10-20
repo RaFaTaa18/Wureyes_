@@ -51,6 +51,7 @@ export default function AdminDashboard() {
 
   const [user, setUser] =
     useState<User | null>(null);
+  const [profileExpanded, setProfileExpanded] = useState(false);
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsError, setBookingsError] = useState("");
@@ -296,19 +297,28 @@ export default function AdminDashboard() {
           </div>
 
           {user && (
-            <div className="admin-user-chip" aria-label={`Akun admin ${user.name}`}>
+            <button
+              type="button"
+              className={`admin-user-chip${profileExpanded ? " is-expanded" : ""}`}
+              aria-label={profileExpanded ? "Sembunyikan detail akun" : "Tampilkan detail akun"}
+              aria-expanded={profileExpanded}
+              onClick={() => setProfileExpanded((expanded) => !expanded)}
+            >
               <span className="admin-user-avatar" aria-hidden="true">
                 <svg viewBox="0 0 24 24" role="presentation">
                   <path d="M12 12.2a4.1 4.1 0 1 0 0-8.2 4.1 4.1 0 0 0 0 8.2Zm0 2c-4.1 0-7.4 2.1-7.4 4.7V21h14.8v-2.1c0-2.6-3.3-4.7-7.4-4.7Z" />
                 </svg>
                 <span className="admin-user-status" />
               </span>
-              <span className="admin-user-chip-content">
-                <strong>{user.name}</strong>
-                <span className="admin-user-email">{user.email}</span>
-                <span className="admin-user-role">{user.role}</span>
-              </span>
-            </div>
+              {profileExpanded && (
+                <span className="admin-user-chip-content">
+                  <strong>{user.name}</strong>
+                  <span className="admin-user-email">{user.email}</span>
+                  <span className="admin-user-role">{user.role}</span>
+                  <span className="admin-user-online"><span /> Online</span>
+                </span>
+              )}
+            </button>
           )}
         </header>
 
