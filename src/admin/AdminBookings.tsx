@@ -2211,7 +2211,7 @@ const amount =
                       <button
     type="button"
     className="booking-edit-button"
-    onClick={(event) =>
+    onClick={() =>
       openEditBooking(booking)
     }
   >
