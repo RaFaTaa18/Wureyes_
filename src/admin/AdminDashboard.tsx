@@ -55,6 +55,7 @@ export default function AdminDashboard() {
 
   const [loading, setLoading] =
     useState(true);
+  const [selectedRevenueYear, setSelectedRevenueYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
     const token =
@@ -129,18 +130,24 @@ export default function AdminDashboard() {
   }, [navigate]);
 
   const recentBookings = useMemo(() => [...bookings].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()), [bookings]);
+  const revenueYears = useMemo(() => {
+    const years = bookings
+      .filter((booking) => booking.payment_status === "paid" && booking.payment_date)
+      .map((booking) => Number(booking.payment_date!.slice(0, 4)))
+      .filter((year) => Number.isInteger(year) && year > 0);
+    return Array.from(new Set([new Date().getFullYear(), ...years])).sort((a, b) => b - a);
+  }, [bookings]);
   const monthlyRevenue = useMemo(() => {
-    const year = new Date().getFullYear();
     const names = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
     const values = names.map((month) => ({ month, total: 0 }));
     bookings.forEach((booking) => {
       if (booking.payment_status !== "paid" || !booking.payment_date) return;
       const date = new Date(booking.payment_date.slice(0, 10) + "T00:00:00");
       const amount = Number(booking.payment_amount ?? 0);
-      if (date.getFullYear() === year && Number.isFinite(amount) && amount > 0) values[date.getMonth()].total += amount;
+      if (date.getFullYear() === selectedRevenueYear && Number.isFinite(amount) && amount > 0) values[date.getMonth()].total += amount;
     });
     return values;
-  }, [bookings]);
+  }, [bookings, selectedRevenueYear]);
   const formatMoney = (value: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value);
   const formatDate = (value: string) => {
     if (!value) return "—";
@@ -271,10 +278,11 @@ export default function AdminDashboard() {
                     <div className="dashboard-panel-foot"><span>{stats?.pendingBookings ?? 0} booking pending</span><button onClick={() => setActivePage("bookings")}>Manage bookings ↗</button></div>
                   </article>
                   <article className="dashboard-panel revenue-panel">
-                    <div className="dashboard-panel-heading"><div><p className="dashboard-eyebrow">PAID PAYMENTS</p><h3>Monthly Revenue</h3></div><span className="dashboard-year">{new Date().getFullYear()}</span></div>
-                    <div className="revenue-total">{formatMoney(totalRevenue)}<span> tahun berjalan</span></div>
+                    <div className="dashboard-panel-heading"><div><p className="dashboard-eyebrow">PAID PAYMENTS</p><h3>Monthly Revenue</h3></div><label className="revenue-year-picker"><span>Tahun</span><select aria-label="Pilih tahun pendapatan" value={selectedRevenueYear} onChange={(event) => setSelectedRevenueYear(Number(event.target.value))}>{revenueYears.map((year) => <option key={year} value={year}>{year}</option>)}</select></label></div>
+                    <div className="revenue-total">{formatMoney(totalRevenue)}<span>Total pendapatan tahun {selectedRevenueYear}</span></div>
                     <div className="revenue-chart" role="img" aria-label="Grafik pendapatan bulanan dari pembayaran tercatat">{monthlyRevenue.map((item) => <div className="revenue-bar-column" key={item.month} title={item.month + ": " + formatMoney(item.total)}><div className="revenue-bar-track"><div className="revenue-bar" style={{ height: (item.total ? Math.max(4, item.total / maxRevenue * 100) : 0) + "%" }} /></div><small>{item.month}</small></div>)}</div>
-                    <p className="revenue-footnote">Hanya pembayaran berstatus paid dengan tanggal pembayaran yang tercatat.</p>
+                    <div className="revenue-month-details">{monthlyRevenue.map((item) => <div key={item.month}><span>{item.month}</span><strong>{formatMoney(item.total)}</strong></div>)}</div>
+                    <p className="revenue-footnote">Pendapatan dihitung dari pembayaran berstatus paid berdasarkan tanggal pembayaran. Pilih tahun untuk melihat rincian per bulan.</p>
                   </article>
                   <article className="dashboard-panel quick-actions-panel">
                     <div className="dashboard-panel-heading"><div><p className="dashboard-eyebrow">SHORTCUTS</p><h3>Quick Actions</h3></div></div>
