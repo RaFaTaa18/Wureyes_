@@ -1,4 +1,5 @@
 ﻿  import { useEffect, useMemo, useState } from "react";
+  import { createPortal } from "react-dom";
   import "./AdminBookings.css";
 
   interface Booking {
@@ -2279,7 +2280,7 @@ const amount =
 
   {/* PAYMENT RECEIPT MODAL */}
 
-  {receiptBooking && (
+  {receiptBooking && createPortal((
     <div
       className="receipt-modal-overlay"
       onClick={() =>
@@ -2288,7 +2289,6 @@ const amount =
     >
       <div
         className="receipt-modal"
-        style={{ top: 24, left: "50%", transform: "translateX(-50%)", maxHeight: "calc(100vh - 48px)" }}
         onClick={(event) =>
           event.stopPropagation()
         }
@@ -2558,12 +2558,12 @@ const amount =
 
       </div>
     </div>
-  )}
+  ), document.body)}
 
         {/* PHOTO SELECTION MODAL */}
 
         {selectedBooking !== null &&
-          selectionData && (
+          selectionData && createPortal((
 
             <div
               className="selection-modal-overlay"
@@ -2717,11 +2717,11 @@ const amount =
               </div>
 
             </div>
-          )}
+  ), document.body)}
           
   {/* EDIT BOOKING MODAL */}
 
-  {editingBooking && (
+  {editingBooking && createPortal((
     <div
       className="edit-booking-overlay"
       onClick={() =>
@@ -2731,7 +2731,6 @@ const amount =
     >
       <div
         className="edit-booking-modal"
-        style={{ top: 24, left: "50%", transform: "translateX(-50%)", maxHeight: "calc(100vh - 48px)" }}
         onClick={(event) =>
           event.stopPropagation()
         }
@@ -2906,7 +2905,7 @@ const amount =
         </div>
       </div>
     </div>
-  )}
+  ), document.body)}
 
 
       </div>
