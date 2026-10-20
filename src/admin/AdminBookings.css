@@ -2860,3 +2860,59 @@
   object-fit: contain !important;
   object-position: center !important;
 }
+
+
+/* PRINT FIX: render only the receipt portal and remove inherited page sizing/backgrounds. */
+@media print {
+  html,
+  body {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  body > *:not(.receipt-modal-overlay) {
+    display: none !important;
+  }
+
+  body > .receipt-modal-overlay {
+    display: block !important;
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #292929 !important;
+    box-shadow: none !important;
+  }
+
+  body > .receipt-modal-overlay::before,
+  body > .receipt-modal-overlay::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  .receipt-modal,
+  .payment-receipt {
+    float: none !important;
+    transform: none !important;
+    contain: none !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid-page !important;
+  }
+
+  .receipt-modal,
+  .payment-receipt,
+  .receipt-footer {
+    background-color: #ffffff !important;
+  }
+}
