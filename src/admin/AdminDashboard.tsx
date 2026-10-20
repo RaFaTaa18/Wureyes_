@@ -296,10 +296,18 @@ export default function AdminDashboard() {
           </div>
 
           {user && (
-            <div className="admin-user">
-              <strong>{user.name}</strong>
-              <span>{user.email}</span>
-              <span>{user.role}</span>
+            <div className="admin-user-chip" aria-label={`Akun admin ${user.name}`}>
+              <span className="admin-user-avatar" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="presentation">
+                  <path d="M12 12.2a4.1 4.1 0 1 0 0-8.2 4.1 4.1 0 0 0 0 8.2Zm0 2c-4.1 0-7.4 2.1-7.4 4.7V21h14.8v-2.1c0-2.6-3.3-4.7-7.4-4.7Z" />
+                </svg>
+                <span className="admin-user-status" />
+              </span>
+              <span className="admin-user-chip-content">
+                <strong>{user.name}</strong>
+                <span className="admin-user-email">{user.email}</span>
+                <span className="admin-user-role">{user.role}</span>
+              </span>
             </div>
           )}
         </header>
