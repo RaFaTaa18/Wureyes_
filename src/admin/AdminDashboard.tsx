@@ -129,7 +129,7 @@ export default function AdminDashboard() {
     loadDashboard();
   }, [navigate]);
 
-  const recentBookings = useMemo(() => [...bookings].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()), [bookings]);
+  const recentBookings = useMemo(() => [...bookings].sort((a, b) => { const dateA = new Date(a.event_date + "T00:00:00").getTime(); const dateB = new Date(b.event_date + "T00:00:00").getTime(); return dateA - dateB; }), [bookings]);
   const revenueYears = useMemo(() => {
     const years = bookings
       .filter((booking) => booking.payment_status === "paid" && booking.payment_date)
