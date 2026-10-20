@@ -129,7 +129,15 @@ export default function AdminDashboard() {
     loadDashboard();
   }, [navigate]);
 
-  const recentBookings = useMemo(() => [...bookings].sort((a, b) => { const dateA = new Date(a.event_date + "T00:00:00").getTime(); const dateB = new Date(b.event_date + "T00:00:00").getTime(); return dateA - dateB; }), [bookings]);
+  const recentBookings = useMemo(() => [...bookings].sort((a, b) => {
+    // MySQL DATE values are YYYY-MM-DD; compare their calendar dates directly
+    // to avoid timezone parsing differences changing the sort order.
+    const dateA = String(a.event_date ?? "").slice(0, 10);
+    const dateB = String(b.event_date ?? "").slice(0, 10);
+    const byEventDate = dateA.localeCompare(dateB);
+    if (byEventDate !== 0) return byEventDate;
+    return a.client_name.localeCompare(b.client_name, "id");
+  }), [bookings]);
   const revenueYears = useMemo(() => {
     const years = bookings
       .filter((booking) => booking.payment_status === "paid" && booking.payment_date)
