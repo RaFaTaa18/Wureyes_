@@ -1623,9 +1623,11 @@
   inset: 0;
   z-index: 100000;
 
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-  padding: 0;
+  padding: 24px;
   box-sizing: border-box;
 
   background: rgba(24, 22, 19, 0.62);
@@ -1634,9 +1636,7 @@
 }
 
 .edit-booking-modal {
-  position: fixed;
-  box-sizing: border-box;
-  width: min(720px, calc(100vw - 24px));
+  width: min(720px, 100%);
   max-height: calc(100vh - 48px);
 
   display: flex;
@@ -2108,9 +2108,11 @@
   inset: 0;
   z-index: 9999;
 
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-  padding: 0;
+  padding: 24px;
 
   background: rgba(25, 25, 25, 0.55);
 
@@ -2118,10 +2120,7 @@
 }
 
 .receipt-modal {
-  position: fixed;
-  box-sizing: border-box;
-  width: min(680px, calc(100vw - 24px));
-  height: min(720px, calc(100vh - 48px));
+  width: min(680px, 100%);
   max-height: calc(100vh - 48px);
 
   display: flex;
@@ -2137,8 +2136,8 @@
 }
 
 .payment-receipt {
-  flex: 1 1 auto;
-  min-height: 280px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 
   margin: 24px;
