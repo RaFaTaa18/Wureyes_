@@ -1637,7 +1637,7 @@
   position: fixed;
   box-sizing: border-box;
   width: min(720px, calc(100vw - 24px));
-  max-height: calc(100vh - 36px);
+  max-height: calc(100vh - 48px);
 
   display: flex;
   flex-direction: column;
@@ -2121,8 +2121,8 @@
   position: fixed;
   box-sizing: border-box;
   width: min(680px, calc(100vw - 24px));
-  height: min(720px, calc(100vh - 36px));
-  max-height: calc(100vh - 36px);
+  height: min(720px, calc(100vh - 48px));
+  max-height: calc(100vh - 48px);
 
   display: flex;
   flex-direction: column;
