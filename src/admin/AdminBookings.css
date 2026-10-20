@@ -2482,13 +2482,19 @@
   }
 
   .receipt-modal {
-    position: relative !important;
+    display: block !important;
+    position: static !important;
     width: 100% !important;
     max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
     max-height: none !important;
     margin: 0 !important;
+    padding: 0 !important;
     box-shadow: none !important;
+    border: 0 !important;
     border-radius: 0 !important;
+    overflow: visible !important;
     background: #fff !important;
   }
 
@@ -2499,20 +2505,20 @@
   }
 
   .payment-receipt {
-  margin: 0 !important;
-  padding: 0 !important;
-
-  width: 100% !important;
-  max-width: none !important;
-
-  overflow: visible !important;
-
-  border: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-
-  background: #fff !important;
-}
+    display: block !important;
+    flex: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    overflow: visible !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
 
   @page {
   size: A4;
