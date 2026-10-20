@@ -233,3 +233,66 @@
 .revenue-month-details span { color: #9a8978; font-size: 9px; }
 .revenue-month-details strong { overflow-wrap: anywhere; color: #503a2a; font-size: 10px; font-weight: 700; }
 @media (max-width: 480px) { .revenue-month-details { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Match the smooth hover animation used by Wureyes public navigation */
+.quick-action {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  transition:
+    color .35s cubic-bezier(.22, 1, .36, 1),
+    background-color .35s cubic-bezier(.22, 1, .36, 1),
+    border-color .35s cubic-bezier(.22, 1, .36, 1),
+    transform .35s cubic-bezier(.22, 1, .36, 1),
+    box-shadow .35s cubic-bezier(.22, 1, .36, 1);
+}
+.quick-action::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(110deg, rgba(199,155,110,.22), rgba(155,112,78,.08));
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform .4s cubic-bezier(.22, 1, .36, 1);
+}
+.quick-action:hover::before,
+.quick-action:focus-visible::before {
+  transform: scaleX(1);
+}
+.quick-action:hover,
+.quick-action:focus-visible {
+  transform: translateY(-2px);
+  border-color: #b58b65;
+  box-shadow: 0 8px 20px rgba(74,52,39,.12);
+}
+.quick-action > span {
+  transition: transform .35s cubic-bezier(.22, 1, .36, 1), background-color .35s ease;
+}
+.quick-action:hover > span,
+.quick-action:focus-visible > span {
+  transform: translateX(2px) rotate(-4deg);
+}
+.quick-action b {
+  transition: transform .35s cubic-bezier(.22, 1, .36, 1), color .35s ease;
+}
+.quick-action:hover b,
+.quick-action:focus-visible b {
+  transform: translateX(4px);
+}
+.quick-action.primary::before {
+  background: linear-gradient(110deg, rgba(215,165,110,.24), rgba(255,248,239,.06));
+}
+.quick-action.primary:hover,
+.quick-action.primary:focus-visible {
+  border-color: #80583b;
+  background: #3c2a20;
+}
+@media (prefers-reduced-motion: reduce) {
+  .quick-action,
+  .quick-action::before,
+  .quick-action > span,
+  .quick-action b {
+    transition: none;
+  }
+}
