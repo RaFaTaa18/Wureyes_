@@ -730,3 +730,46 @@
 @media (prefers-reduced-motion: reduce) {
   .admin-dashboard .admin-user-chip { transition: none; }
 }
+
+
+/* Clickable compact admin profile control. */
+.admin-dashboard button.admin-user-chip {
+  appearance: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.admin-dashboard button.admin-user-chip:not(.is-expanded) {
+  width: 52px;
+  min-width: 52px;
+  height: 52px;
+  justify-content: center;
+  padding: 7px;
+}
+.admin-dashboard button.admin-user-chip:focus-visible {
+  outline: 3px solid rgba(155,112,78,.35);
+  outline-offset: 3px;
+}
+.admin-dashboard .admin-user-chip-content .admin-user-online {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  color: #527247;
+  font-size: 10px;
+  font-weight: 700;
+}
+.admin-dashboard .admin-user-chip-content .admin-user-online > span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #7d9b70;
+  box-shadow: 0 0 0 2px rgba(125,155,112,.14);
+}
+.admin-dashboard .admin-user-chip.is-expanded {
+  border-radius: 22px;
+  max-width: min(100%, 330px);
+}
+@media (max-width: 750px) {
+  .admin-dashboard button.admin-user-chip:not(.is-expanded) { align-self: flex-start; }
+}
