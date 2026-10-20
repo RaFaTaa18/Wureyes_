@@ -251,7 +251,6 @@ export default function About() {
             <button type="submit" disabled={submitting}>
               {submitting ? "Mengirim..." : "Kirim Testimonial"}
             </button>
-            <p className="testimonial-form-note">Testimonial akan langsung ditampilkan setelah berhasil disimpan.</p>
           </form>
         </div>
       </div>
