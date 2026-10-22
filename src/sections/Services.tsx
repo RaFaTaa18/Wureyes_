@@ -164,7 +164,7 @@ export default function Services() {
                   <div className="service-detail-number">
                     {String(selectedIndex + 1).padStart(2, "0")}
                   </div>
-                  <h3>{selectedService.name} | {detailPreset.titleSuffix}</h3>
+                  <h3>{selectedService.name}{detailPreset.titleSuffix ? ` | ${detailPreset.titleSuffix}` : ""}</h3>
                   <ul className="service-feature-list">
                     {detailPreset.features.map((feature) => (
                       <li key={feature}><span aria-hidden="true">✓</span>{feature}</li>
