@@ -13,6 +13,7 @@ interface Service {
   price: number | null;
   image_url: string | null;
   is_active: boolean;
+  detail_content?: string | null;
 }
 
 interface ServiceForm {
@@ -22,6 +23,13 @@ interface ServiceForm {
   price: string;
   image_url: string;
   is_active: boolean;
+  detailTitleSuffix: string;
+  detailFeatures: string;
+  deliveryTitle: string;
+  deliveryDescription: string;
+  revisionTitle: string;
+  revisionDescription: string;
+  detailNotes: string;
 }
 
 const emptyForm: ServiceForm = {
@@ -31,6 +39,13 @@ const emptyForm: ServiceForm = {
   price: "",
   image_url: "",
   is_active: true,
+  detailTitleSuffix: "",
+  detailFeatures: "",
+  deliveryTitle: "",
+  deliveryDescription: "",
+  revisionTitle: "",
+  revisionDescription: "",
+  detailNotes: "",
 };
 
 export default function AdminServices() {
@@ -122,6 +137,22 @@ export default function AdminServices() {
           : "",
       image_url: service.image_url || "",
       is_active: Boolean(service.is_active),
+      ...(() => {
+        try {
+          const detail = service.detail_content ? JSON.parse(service.detail_content) : {};
+          return {
+            detailTitleSuffix: detail.titleSuffix || "",
+            detailFeatures: Array.isArray(detail.features) ? detail.features.join("\n") : "",
+            deliveryTitle: detail.deliveryTitle || "",
+            deliveryDescription: detail.deliveryDescription || "",
+            revisionTitle: detail.revisionTitle || "",
+            revisionDescription: detail.revisionDescription || "",
+            detailNotes: Array.isArray(detail.notes) ? detail.notes.join("\n") : "",
+          };
+        } catch {
+          return { detailTitleSuffix: "", detailFeatures: "", deliveryTitle: "", deliveryDescription: "", revisionTitle: "", revisionDescription: "", detailNotes: "" };
+        }
+      })(),
     });
 
 
@@ -172,6 +203,15 @@ formData.append("price", form.price);
 formData.append("is_active", String(form.is_active));
 
 formData.append("image_url", form.image_url);
+formData.append("detail_content", JSON.stringify({
+  titleSuffix: form.detailTitleSuffix.trim(),
+  features: form.detailFeatures.split("\n").map((item) => item.trim()).filter(Boolean),
+  deliveryTitle: form.deliveryTitle.trim(),
+  deliveryDescription: form.deliveryDescription.trim(),
+  revisionTitle: form.revisionTitle.trim(),
+  revisionDescription: form.revisionDescription.trim(),
+  notes: form.detailNotes.split("\n").map((item) => item.trim()).filter(Boolean),
+}));
 
 const response = await fetch(url, {
   method,
@@ -347,6 +387,44 @@ const result = await response.json();
               rows={5}
             />
           </label>
+
+
+          <div className="service-detail-editor">
+            <div className="service-detail-editor-heading">
+              <p className="services-admin-label">OPTIONAL DETAIL PAGE</p>
+              <p>Isi bagian ini untuk menampilkan layout detail khusus. Kosongkan jika ingin memakai tampilan standar. Untuk daftar fasilitas dan catatan, tulis satu item per baris.</p>
+            </div>
+            <label>
+              Judul tambahan
+              <input value={form.detailTitleSuffix} onChange={(event) => handleChange("detailTitleSuffix", event.target.value)} placeholder="Photography + Videography - The Bridal Story" />
+            </label>
+            <label>
+              Daftar fasilitas (satu item per baris)
+              <textarea rows={6} value={form.detailFeatures} onChange={(event) => handleChange("detailFeatures", event.target.value)} placeholder={"1 fotografer + 1 videografer\\n120 menit sesi foto\\n50 file edit"} />
+            </label>
+            <div className="service-detail-editor-grid">
+              <label>
+                Judul waktu pengiriman
+                <input value={form.deliveryTitle} onChange={(event) => handleChange("deliveryTitle", event.target.value)} placeholder="Waktu Pengiriman" />
+              </label>
+              <label>
+                Deskripsi waktu pengiriman
+                <textarea rows={3} value={form.deliveryDescription} onChange={(event) => handleChange("deliveryDescription", event.target.value)} placeholder="Foto dan video dikirim 7–14 hari..." />
+              </label>
+              <label>
+                Judul ketentuan revisi
+                <input value={form.revisionTitle} onChange={(event) => handleChange("revisionTitle", event.target.value)} placeholder="Revisi" />
+              </label>
+              <label>
+                Deskripsi ketentuan revisi
+                <textarea rows={3} value={form.revisionDescription} onChange={(event) => handleChange("revisionDescription", event.target.value)} placeholder="Termasuk 1 kali revisi minor..." />
+              </label>
+            </div>
+            <label>
+              Catatan (satu catatan per baris)
+              <textarea rows={5} value={form.detailNotes} onChange={(event) => handleChange("detailNotes", event.target.value)} placeholder={"Permintaan revisi maksimal 3 hari...\\nProses revisi 3–5 hari..."} />
+            </label>
+          </div>
 
           <label className="service-active">
             <input

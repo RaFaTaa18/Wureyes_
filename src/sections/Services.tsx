@@ -8,6 +8,7 @@ interface Service {
   description: string;
   price: string;
   image_url: string | null;
+  detail_content?: string | null;
 }
 
 interface ServiceDetailPreset {
@@ -22,31 +23,37 @@ interface ServiceDetailPreset {
 
 // Optional presentation-only details. Services without a preset keep the standard layout.
 // This avoids requiring new database columns or backend changes.
-const SERVICE_DETAIL_PRESETS: Record<string, ServiceDetailPreset> = {
-  "bridal-shower": {
-    titleSuffix: "Photography + Videography - The Bridal Story",
-    features: [
-      "1 fotografer + 1 videografer",
-      "120 Menit sesi foto",
-      "Seluruh layanan pada paket Photography Only",
-      "50 File edit",
-      "1 Video highlight vertikal dengan color grading (video 45–60 detik)",
-      "Musik dan transisi sesuai konsep acara",
-      "Semua file asli dalam Google Drive (JPG, RAW & Video)",
-    ],
-    deliveryTitle: "Waktu Pengiriman",
-    deliveryDescription: "Foto & video final akan dikirim dalam waktu 7–14 hari kalender setelah hari acara.",
-    revisionTitle: "Revisi",
-    revisionDescription: "Termasuk 1 kali revisi minor (penyesuaian warna, pencahayaan, teks, urutan klip sederhana, atau volume musik).",
-    notes: [
-      "Permintaan revisi diajukan maksimal 3 hari kalender setelah hasil awal diterima.",
-      "Proses revisi maksimal 3–5 hari kalender setelah catatan revisi diterima.",
-      "Revisi di luar ketentuan (perubahan konsep besar, editing ulang menyeluruh, atau tambahan revisi) dapat dikenakan biaya tambahan.",
-    ],
-  },
-};
+const SERVICE_DETAIL_PRESETS: Record<string, ServiceDetailPreset> = {};
 
 const getServiceDetailPreset = (service: Service): ServiceDetailPreset | null => {
+  if (service.detail_content) {
+    try {
+      const detail = JSON.parse(service.detail_content) as Partial<ServiceDetailPreset>;
+      const hasContent = Boolean(
+        detail.titleSuffix ||
+        detail.features?.length ||
+        detail.deliveryTitle ||
+        detail.deliveryDescription ||
+        detail.revisionTitle ||
+        detail.revisionDescription ||
+        detail.notes?.length
+      );
+      if (hasContent) {
+        return {
+          titleSuffix: detail.titleSuffix || "",
+          features: Array.isArray(detail.features) ? detail.features : [],
+          deliveryTitle: detail.deliveryTitle || "Waktu Pengiriman",
+          deliveryDescription: detail.deliveryDescription || "",
+          revisionTitle: detail.revisionTitle || "Revisi",
+          revisionDescription: detail.revisionDescription || "",
+          notes: Array.isArray(detail.notes) ? detail.notes : [],
+        };
+      }
+    } catch {
+      // Ignore invalid optional details and use the legacy presentation below.
+    }
+  }
+
   const key = (service.slug || service.name)
     .toLowerCase()
     .trim()
@@ -157,7 +164,7 @@ export default function Services() {
                   <div className="service-detail-number">
                     {String(selectedIndex + 1).padStart(2, "0")}
                   </div>
-                  <h3>{selectedService.name} | {detailPreset.titleSuffix}</h3>
+                  <h3>{selectedService.name}{detailPreset.titleSuffix ? ` | ${detailPreset.titleSuffix}` : ""}</h3>
                   <ul className="service-feature-list">
                     {detailPreset.features.map((feature) => (
                       <li key={feature}><span aria-hidden="true">✓</span>{feature}</li>
