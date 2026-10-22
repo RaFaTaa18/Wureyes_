@@ -201,7 +201,7 @@ export default function Services() {
                   <span>STARTING FROM</span>
                   <strong>Rp {formatPrice(selectedService.price)}</strong>
                 </div>
-                <a className="service-book-button" href={`/?service=${selectedService.id}#booking`}>
+                <a className="service-book-button" href={`/booking?service=${selectedService.id}`}>
                   Book This Service <span aria-hidden="true">↗</span>
                 </a>
               </div>
@@ -221,7 +221,7 @@ export default function Services() {
                   <span>STARTING FROM</span>
                   <strong>Rp {formatPrice(selectedService.price)}</strong>
                 </div>
-                <a className="service-book-button" href={`/?service=${selectedService.id}#booking`}>
+                <a className="service-book-button" href={`/booking?service=${selectedService.id}`}>
                   Book This Service <span aria-hidden="true">↗</span>
                 </a>
               </div>
