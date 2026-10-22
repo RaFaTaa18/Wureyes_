@@ -72,6 +72,7 @@ router.get("/", async (req, res) => {
         name,
         slug,
         description,
+        detail_content,
         price,
         image_url,
         is_active,
@@ -174,16 +175,18 @@ router.post(
             name,
             slug,
             description,
+            detail_content,
             price,
             image_url,
             is_active
           )
-          VALUES (?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
           `,
           [
             name,
             slug,
             description || null,
+            detail_content || null,
             price !== undefined &&
             price !== null &&
             price !== ""
@@ -251,6 +254,7 @@ router.put(
         name,
         slug,
         description,
+        detail_content,
         price,
         image_url,
         is_active,
@@ -341,6 +345,7 @@ if (!name || !slug) {
           name = ?,
           slug = ?,
           description = ?,
+          detail_content = ?,
           price = ?,
           image_url = ?,
           is_active = ?
@@ -350,6 +355,7 @@ if (!name || !slug) {
           name,
           slug,
           description || null,
+          detail_content || null,
           price !== undefined &&
           price !== null &&
           price !== ""
