@@ -11,6 +11,7 @@ import Hero from "./sections/Hero";
 import Services from "./sections/Services";
 import Portfolio from "./sections/Portfolio";
 import Booking from "./sections/Booking";
+import BookingPage from "./pages/BookingPage";
 import About from "./sections/About";
 import Contact from "./sections/Contact";
 
@@ -86,6 +87,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Website />} />
+        <Route path="/booking" element={<BookingPage />} />
         <Route path="/terms" element={<Terms />} />
 
         <Route
