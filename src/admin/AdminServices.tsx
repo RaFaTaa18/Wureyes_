@@ -142,12 +142,12 @@ export default function AdminServices() {
           const detail = service.detail_content ? JSON.parse(service.detail_content) : {};
           return {
             detailTitleSuffix: detail.titleSuffix || "",
-            detailFeatures: Array.isArray(detail.features) ? detail.features.join("\\n") : "",
+            detailFeatures: Array.isArray(detail.features) ? detail.features.join("\n") : "",
             deliveryTitle: detail.deliveryTitle || "",
             deliveryDescription: detail.deliveryDescription || "",
             revisionTitle: detail.revisionTitle || "",
             revisionDescription: detail.revisionDescription || "",
-            detailNotes: Array.isArray(detail.notes) ? detail.notes.join("\\n") : "",
+            detailNotes: Array.isArray(detail.notes) ? detail.notes.join("\n") : "",
           };
         } catch {
           return { detailTitleSuffix: "", detailFeatures: "", deliveryTitle: "", deliveryDescription: "", revisionTitle: "", revisionDescription: "", detailNotes: "" };
@@ -205,12 +205,12 @@ formData.append("is_active", String(form.is_active));
 formData.append("image_url", form.image_url);
 formData.append("detail_content", JSON.stringify({
   titleSuffix: form.detailTitleSuffix.trim(),
-  features: form.detailFeatures.split("\\n").map((item) => item.trim()).filter(Boolean),
+  features: form.detailFeatures.split("\n").map((item) => item.trim()).filter(Boolean),
   deliveryTitle: form.deliveryTitle.trim(),
   deliveryDescription: form.deliveryDescription.trim(),
   revisionTitle: form.revisionTitle.trim(),
   revisionDescription: form.revisionDescription.trim(),
-  notes: form.detailNotes.split("\\n").map((item) => item.trim()).filter(Boolean),
+  notes: form.detailNotes.split("\n").map((item) => item.trim()).filter(Boolean),
 }));
 
 const response = await fetch(url, {
