@@ -51,6 +51,23 @@ export default function Booking() {
       .then((result) => {
         if (result.success) {
           setServices(result.data);
+
+          const requestedServiceId = new URLSearchParams(
+            window.location.search
+          ).get("service");
+
+          if (requestedServiceId) {
+            const requestedService = result.data.find(
+              (service: Service) => service.id === Number(requestedServiceId)
+            );
+
+            if (requestedService) {
+              setForm((previous) => ({
+                ...previous,
+                service_id: String(requestedService.id),
+              }));
+            }
+          }
         }
       })
       .catch((error) => {
