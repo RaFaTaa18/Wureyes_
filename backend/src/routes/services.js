@@ -120,6 +120,7 @@ router.post(
     name,
     slug,
     description,
+    detail_content,
     price,
     image_url,
     is_active,
