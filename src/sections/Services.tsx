@@ -10,6 +10,57 @@ interface Service {
   image_url: string | null;
 }
 
+interface ServiceDetailPreset {
+  titleSuffix: string;
+  features: string[];
+  deliveryTitle: string;
+  deliveryDescription: string;
+  revisionTitle: string;
+  revisionDescription: string;
+  notes: string[];
+}
+
+// Optional presentation-only details. Services without a preset keep the standard layout.
+// This avoids requiring new database columns or backend changes.
+const SERVICE_DETAIL_PRESETS: Record<string, ServiceDetailPreset> = {
+  "bridal-shower": {
+    titleSuffix: "Photography + Videography - The Bridal Story",
+    features: [
+      "1 fotografer + 1 videografer",
+      "120 Menit sesi foto",
+      "Seluruh layanan pada paket Photography Only",
+      "50 File edit",
+      "1 Video highlight vertikal dengan color grading (video 45–60 detik)",
+      "Musik dan transisi sesuai konsep acara",
+      "Semua file asli dalam Google Drive (JPG, RAW & Video)",
+    ],
+    deliveryTitle: "Waktu Pengiriman",
+    deliveryDescription: "Foto & video final akan dikirim dalam waktu 7–14 hari kalender setelah hari acara.",
+    revisionTitle: "Revisi",
+    revisionDescription: "Termasuk 1 kali revisi minor (penyesuaian warna, pencahayaan, teks, urutan klip sederhana, atau volume musik).",
+    notes: [
+      "Permintaan revisi diajukan maksimal 3 hari kalender setelah hasil awal diterima.",
+      "Proses revisi maksimal 3–5 hari kalender setelah catatan revisi diterima.",
+      "Revisi di luar ketentuan (perubahan konsep besar, editing ulang menyeluruh, atau tambahan revisi) dapat dikenakan biaya tambahan.",
+    ],
+  },
+};
+
+const getServiceDetailPreset = (service: Service): ServiceDetailPreset | null => {
+  const key = (service.slug || service.name)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  if (SERVICE_DETAIL_PRESETS[key]) return SERVICE_DETAIL_PRESETS[key];
+
+  // Support existing records whose slug is empty or differs from the service name.
+  if (/bridal[-\s]?shower/i.test(service.name)) {
+    return SERVICE_DETAIL_PRESETS["bridal-shower"];
+  }
+  return null;
+};
+
 export default function Services() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +91,7 @@ export default function Services() {
   const selectedIndex = selectedService
     ? services.findIndex((service) => service.id === selectedService.id)
     : -1;
+  const detailPreset = selectedService ? getServiceDetailPreset(selectedService) : null;
 
   useEffect(() => {
     setCurrentPage((page) => Math.min(page, totalPages));
@@ -86,7 +138,10 @@ export default function Services() {
       ) : services.length === 0 ? (
         <p className="loading">No services available right now.</p>
       ) : selectedService ? (
-        <div className="service-detail" key={selectedService.id}>
+        <div
+          className={`service-detail${detailPreset ? " service-detail-enhanced" : ""}`}
+          key={selectedService.id}
+        >
           <button
             type="button"
             className="service-back"
@@ -95,24 +150,76 @@ export default function Services() {
             <span aria-hidden="true">←</span> Back to services
           </button>
 
-          <div className="service-detail-number">
-            {String(selectedIndex + 1).padStart(2, "0")}
-          </div>
-          <h3>{selectedService.name}</h3>
-          <p className="service-detail-description">
-            {selectedService.description?.trim() ||
-              `Discover our ${selectedService.name.toLowerCase()} service, thoughtfully created to capture your story with the Wureyes visual approach.`}
-          </p>
+          {detailPreset ? (
+            <>
+              <div className="service-detail-enhanced-body">
+                <div className="service-detail-main">
+                  <div className="service-detail-number">
+                    {String(selectedIndex + 1).padStart(2, "0")}
+                  </div>
+                  <h3>{selectedService.name} | {detailPreset.titleSuffix}</h3>
+                  <ul className="service-feature-list">
+                    {detailPreset.features.map((feature) => (
+                      <li key={feature}><span aria-hidden="true">✓</span>{feature}</li>
+                    ))}
+                  </ul>
+                </div>
 
-          <div className="service-detail-footer">
-            <div className="service-detail-price">
-              <span>STARTING FROM</span>
-              <strong>Rp {formatPrice(selectedService.price)}</strong>
-            </div>
-            <a className="service-book-button" href="#booking">
-              Book This Service <span aria-hidden="true">↗</span>
-            </a>
-          </div>
+                <aside className="service-detail-aside" aria-label="Delivery and revision terms">
+                  <div className="service-term-card">
+                    <span className="service-term-icon" aria-hidden="true">♧</span>
+                    <div>
+                      <h4>{detailPreset.deliveryTitle}</h4>
+                      <p>{detailPreset.deliveryDescription}</p>
+                    </div>
+                  </div>
+                  <div className="service-term-card">
+                    <span className="service-term-icon" aria-hidden="true">✎</span>
+                    <div>
+                      <h4>{detailPreset.revisionTitle}</h4>
+                      <p>{detailPreset.revisionDescription}</p>
+                    </div>
+                  </div>
+                  <div className="service-detail-notes">
+                    <h4><span aria-hidden="true">ⓘ</span> Catatan</h4>
+                    <ul>
+                      {detailPreset.notes.map((note) => <li key={note}>{note}</li>)}
+                    </ul>
+                  </div>
+                </aside>
+              </div>
+
+              <div className="service-detail-footer">
+                <div className="service-detail-price">
+                  <span>STARTING FROM</span>
+                  <strong>Rp {formatPrice(selectedService.price)}</strong>
+                </div>
+                <a className="service-book-button" href="#booking">
+                  Book This Service <span aria-hidden="true">↗</span>
+                </a>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="service-detail-number">
+                {String(selectedIndex + 1).padStart(2, "0")}
+              </div>
+              <h3>{selectedService.name}</h3>
+              <p className="service-detail-description">
+                {selectedService.description?.trim() ||
+                  `Discover our ${selectedService.name.toLowerCase()} service, thoughtfully created to capture your story with the Wureyes visual approach.`}
+              </p>
+              <div className="service-detail-footer">
+                <div className="service-detail-price">
+                  <span>STARTING FROM</span>
+                  <strong>Rp {formatPrice(selectedService.price)}</strong>
+                </div>
+                <a className="service-book-button" href="#booking">
+                  Book This Service <span aria-hidden="true">↗</span>
+                </a>
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <>
