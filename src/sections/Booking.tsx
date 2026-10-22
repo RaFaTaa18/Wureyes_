@@ -78,6 +78,22 @@ export default function Booking() {
       });
   }, []);
 
+  useEffect(() => {
+    const handleServiceSelection = (event: Event) => {
+      const customEvent = event as CustomEvent<{ serviceId: number }>;
+      const serviceId = Number(customEvent.detail?.serviceId);
+      if (!Number.isFinite(serviceId)) return;
+
+      setForm((previous) => ({
+        ...previous,
+        service_id: String(serviceId),
+      }));
+    };
+
+    window.addEventListener("wureyes:select-service", handleServiceSelection);
+    return () => window.removeEventListener("wureyes:select-service", handleServiceSelection);
+  }, []);
+
   const handleChange = (
     event: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement

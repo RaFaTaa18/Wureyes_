@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import "./Services.css";
 
 interface Service {
@@ -133,6 +133,25 @@ export default function Services() {
   const formatPrice = (price: string) =>
     Number(price).toLocaleString("id-ID");
 
+  const handleBookService = (event: MouseEvent<HTMLAnchorElement>, serviceId: number) => {
+    event.preventDefault();
+
+    const url = new URL(window.location.href);
+    url.pathname = "/";
+    url.searchParams.set("service", String(serviceId));
+    url.hash = "booking";
+    window.history.pushState({}, "", url);
+
+    window.dispatchEvent(
+      new CustomEvent("wureyes:select-service", { detail: { serviceId } }),
+    );
+
+    document.getElementById("booking")?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      block: "start",
+    });
+  };
+
   return (
     <section id="services" className="services-section" ref={sectionRef}>
       <div className="section-heading">
@@ -201,7 +220,7 @@ export default function Services() {
                   <span>STARTING FROM</span>
                   <strong>Rp {formatPrice(selectedService.price)}</strong>
                 </div>
-                <a className="service-book-button" href={`/booking?service=${selectedService.id}`}>
+                <a className="service-book-button" href={`/?service=${selectedService.id}#booking`} onClick={(event) => handleBookService(event, selectedService.id)}>
                   Book This Service <span aria-hidden="true">↗</span>
                 </a>
               </div>
@@ -221,7 +240,7 @@ export default function Services() {
                   <span>STARTING FROM</span>
                   <strong>Rp {formatPrice(selectedService.price)}</strong>
                 </div>
-                <a className="service-book-button" href={`/booking?service=${selectedService.id}`}>
+                <a className="service-book-button" href={`/?service=${selectedService.id}#booking`} onClick={(event) => handleBookService(event, selectedService.id)}>
                   Book This Service <span aria-hidden="true">↗</span>
                 </a>
               </div>
