@@ -394,14 +394,6 @@ const result = await response.json();
               <p className="services-admin-label">OPTIONAL DETAIL PAGE</p>
               <p>Isi bagian ini untuk menampilkan layout detail khusus. Kosongkan jika ingin memakai tampilan standar. Untuk daftar fasilitas dan catatan, tulis satu item per baris.</p>
             </div>
-            <label>
-              Judul tambahan
-              <input value={form.detailTitleSuffix} onChange={(event) => handleChange("detailTitleSuffix", event.target.value)} placeholder="Photography + Videography - The Bridal Story" />
-            </label>
-            <label>
-              Daftar fasilitas (satu item per baris)
-              <textarea rows={6} value={form.detailFeatures} onChange={(event) => handleChange("detailFeatures", event.target.value)} placeholder={"1 fotografer + 1 videografer\\n120 menit sesi foto\\n50 file edit"} />
-            </label>
             <div className="service-detail-editor-grid">
               <label>
                 Judul waktu pengiriman
