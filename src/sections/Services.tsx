@@ -184,11 +184,18 @@ export default function Services() {
                     {String(selectedIndex + 1).padStart(2, "0")}
                   </div>
                   <h3>{selectedService.name}{detailPreset.titleSuffix ? ` | ${detailPreset.titleSuffix}` : ""}</h3>
-                  <ul className="service-feature-list">
-                    {detailPreset.features.map((feature) => (
-                      <li key={feature}><span aria-hidden="true">✓</span>{feature}</li>
-                    ))}
-                  </ul>
+                  {detailPreset.features.length > 0 ? (
+                    <ul className="service-feature-list">
+                      {detailPreset.features.map((feature) => (
+                        <li key={feature}><span aria-hidden="true">✓</span>{feature}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="service-detail-description">
+                      {selectedService.description?.trim() ||
+                        `Discover our ${selectedService.name.toLowerCase()} service, thoughtfully created to capture your story with the Wureyes visual approach.`}
+                    </p>
+                  )}
                 </div>
 
                 <aside className="service-detail-aside" aria-label="Delivery and revision terms">
