@@ -447,7 +447,7 @@ router.get(
     try {
       const [bookings] = await pool.query(
         `
-        SELECT b.id, b.additional_fee_amount, s.price AS service_price
+        SELECT b.id, b.additional_fee_amount, b.additional_fee_description, s.price AS service_price
         FROM bookings b
         INNER JOIN services s ON s.id = b.service_id
         WHERE b.id = ?
@@ -484,6 +484,8 @@ router.get(
         data: {
           booking_id: Number(id),
           invoice_total: invoiceTotal,
+          additional_fee_amount: Number(bookings[0].additional_fee_amount || 0),
+          additional_fee_description: bookings[0].additional_fee_description || "",
           total_paid: Number(totalPaid.toFixed(2)),
           remaining_amount: Math.max(0, Number((invoiceTotal - totalPaid).toFixed(2))),
           transactions: transactions.map((item) => ({
@@ -607,6 +609,10 @@ router.post(
       );
 
       const paymentStatus = totalAfter >= invoiceTotal - 0.009 ? "paid" : "dp";
+      const [latestPaymentRows] = await connection.query(
+        "SELECT MAX(payment_date) AS latest_payment_date FROM booking_payment_transactions WHERE booking_id = ?",
+        [id]
+      );
       await connection.query(
         `
         UPDATE bookings
@@ -617,7 +623,7 @@ router.post(
           additional_fee_description = ?
         WHERE id = ?
         `,
-        [paymentStatus, totalAfter, `${payment_date} 12:00:00`, additionalFee, feeDescription, id]
+        [paymentStatus, totalAfter, latestPaymentRows[0].latest_payment_date, additionalFee, feeDescription, id]
       );
 
       await connection.commit();
@@ -646,248 +652,15 @@ router.post(
   }
 );
 
-// =====================================================
- // UPDATE BOOKING PAYMENT - ADMIN ONLY
- // =====================================================
-
+// Deprecated compatibility endpoint. Payment records are append-only now.
 router.patch(
   "/:id/payment",
   authenticateToken,
   requireAdmin,
-  async (req, res) => {
-    try {
-      const { id } = req.params;
-      const {
-  payment_status,
-  payment_amount,
-  payment_date,
-  additional_fee_amount,
-  additional_fee_description,
-} = req.body;
-
-      // 1. Validate payment status
-      const allowedPaymentStatuses = [
-        "unpaid",
-        "dp",
-        "paid",
-      ];
-
-      if (
-        !allowedPaymentStatuses.includes(
-          payment_status
-        )
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid payment status",
-        });
-      }
-
-      // 2. Check whether booking exists
-      const [existing] = await pool.query(
-        `
-        SELECT b.id, s.price AS service_price
-        FROM bookings b
-        INNER JOIN services s ON s.id = b.service_id
-        WHERE b.id = ?
-        LIMIT 1
-        `,
-        [id]
-      );
-
-      if (existing.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "Booking not found",
-        });
-      }
-
-      // 3. Prepare payment data
-      let amount = null;
-      let selectedPaymentDate = null;
-
-      if (payment_status !== "unpaid") {
-        // Validate amount
-        if (
-          payment_amount === null ||
-          payment_amount === undefined ||
-          String(payment_amount).trim() === ""
-        ) {
-          return res.status(400).json({
-            success: false,
-            message:
-              "Jumlah pembayaran wajib diisi.",
-          });
-        }
-
-        amount = Number(payment_amount);
-
-        if (
-          !Number.isFinite(amount) ||
-          amount <= 0
-        ) {
-          return res.status(400).json({
-            success: false,
-            message:
-              "Jumlah pembayaran harus lebih besar dari Rp0.",
-          });
-        }
-
-        // Validate date format and actual calendar date
-        if (
-          typeof payment_date !== "string" ||
-          !/^\d{4}-\d{2}-\d{2}$/.test(payment_date)
-        ) {
-          return res.status(400).json({
-            success: false,
-            message:
-              "Tanggal pembayaran wajib diisi dengan format YYYY-MM-DD.",
-          });
-        }
-
-        const [year, month, day] =
-          payment_date.split("-").map(Number);
-
-        const parsedDate = new Date(
-          Date.UTC(year, month - 1, day)
-        );
-
-        const validDate =
-          parsedDate.getUTCFullYear() === year &&
-          parsedDate.getUTCMonth() === month - 1 &&
-          parsedDate.getUTCDate() === day;
-
-        if (!validDate) {
-          return res.status(400).json({
-            success: false,
-            message:
-              "Tanggal pembayaran tidak valid.",
-          });
-        }
-
-        selectedPaymentDate = payment_date;
-      }
-
-      const additionalFee = Number(
-  additional_fee_amount ?? 0
-);
-
-if (
-  !Number.isFinite(additionalFee) ||
-  additionalFee < 0
-) {
-  return res.status(400).json({
+  (_req, res) => res.status(410).json({
     success: false,
-    message:
-      "Biaya tambahan tidak boleh negatif.",
-  });
-}
-
-const additionalFeeDescription =
-  String(
-    additional_fee_description ?? ""
-  ).trim();
-
-if (
-  additionalFeeDescription.length > 255
-) {
-  return res.status(400).json({
-    success: false,
-    message:
-      "Deskripsi biaya tambahan maksimal 255 karakter.",
-  });
-}
-
-const invoiceTotal = Number(existing[0].service_price ?? 0) + additionalFee;
-if (payment_status === "dp" && amount >= invoiceTotal) {
-  return res.status(400).json({
-    success: false,
-    message: "Nominal DP harus lebih kecil dari total tagihan. Pilih Lunas jika membayar seluruh tagihan.",
-  });
-}
-if (payment_status === "paid" && Math.abs(amount - invoiceTotal) > 0.01) {
-  return res.status(400).json({
-    success: false,
-    message: "Nominal pembayaran lunas harus sama dengan total tagihan.",
-  });
-}
-
-      // 4. Save payment data to MySQL
-      await pool.query(
-  `
-  UPDATE bookings
-  SET
-    payment_status = ?,
-    payment_amount = ?,
-    payment_date = ?,
-    additional_fee_amount = ?,
-    additional_fee_description = ?
-  WHERE id = ?
-  `,
-  [
-    payment_status,
-    amount,
-    selectedPaymentDate,
-    additionalFee,
-    additionalFeeDescription || null,
-    id,
-  ]
-);
-
-      // 5. Return saved payment data
-      // 5. Read saved payment data from MySQL
-      const [updatedRows] = await pool.query(
-  `
-  SELECT
-    id,
-    payment_status,
-    payment_amount,
-    DATE_FORMAT(
-      payment_date,
-      '%Y-%m-%d'
-    ) AS payment_date,
-    additional_fee_amount,
-    additional_fee_description
-  FROM bookings
-  WHERE id = ?
-  LIMIT 1
-  `,
-  [id]
-);
-
-      const updatedPayment = updatedRows[0];
-
-      res.json({
-        success: true,
-        message: "Payment updated successfully",
-        data: {
-  booking_id: Number(updatedPayment.id),
-  payment_status:
-    updatedPayment.payment_status,
-  payment_amount:
-    updatedPayment.payment_amount === null
-      ? null
-      : Number(updatedPayment.payment_amount),
-  payment_date:
-    updatedPayment.payment_date,
-  additional_fee_amount:
-    Number(updatedPayment.additional_fee_amount ?? 0),
-  additional_fee_description:
-    updatedPayment.additional_fee_description ?? "",
-},
-      });
-    } catch (error) {
-      console.error(
-        "Update payment error:",
-        error
-      );
-
-      res.status(500).json({
-        success: false,
-        message: "Failed to update payment",
-      });
-    }
-  }
+    message: "Endpoint pembayaran lama sudah digantikan. Gunakan endpoint payment-transactions agar riwayat pembayaran tidak tertimpa.",
+  })
 );
 
 export default router;
