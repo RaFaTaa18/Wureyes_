@@ -81,7 +81,7 @@ export default function AdminWorkflow() {
   }, [request]);
 
   useEffect(() => {
-    void load();
+    void Promise.resolve().then(() => load());
   }, [load]);
 
   function choose(item: WorkflowBooking) {
