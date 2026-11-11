@@ -24,6 +24,7 @@ export default function Portfolio() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const pointerStartX = useRef<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const suppressSlideClick = useRef(false);
   const [dragX, setDragX] = useState(0);
 
@@ -55,7 +56,7 @@ export default function Portfolio() {
   };
 
   useEffect(() => {
-    loadPortfolio();
+    void Promise.resolve().then(() => loadPortfolio());
   }, []);
 
   const getImageUrl = (imageUrl: string) => {
@@ -85,6 +86,7 @@ export default function Portfolio() {
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
     pointerStartX.current = event.clientX;
+    setIsDragging(true);
     suppressSlideClick.current = false;
     event.currentTarget.setPointerCapture(event.pointerId);
   };
@@ -105,6 +107,7 @@ export default function Portfolio() {
 
     const distance = event.clientX - pointerStartX.current;
     pointerStartX.current = null;
+    setIsDragging(false);
     setDragX(0);
 
     if (Math.abs(distance) > 45) {
@@ -114,6 +117,7 @@ export default function Portfolio() {
 
   const handlePointerCancel = () => {
     pointerStartX.current = null;
+    setIsDragging(false);
     setDragX(0);
   };
 
@@ -150,7 +154,7 @@ export default function Portfolio() {
             aria-label="Portfolio carousel. Swipe or use the arrows to browse projects."
           >
             <div
-              className={`portfolio-carousel-stage${pointerStartX.current !== null ? " is-dragging" : ""}`}
+              className={`portfolio-carousel-stage${isDragging ? " is-dragging" : ""}`}
               style={{ "--drag-offset": `${dragX}px` } as React.CSSProperties}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
