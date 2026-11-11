@@ -773,3 +773,5 @@
 @media (max-width: 750px) {
   .admin-dashboard button.admin-user-chip:not(.is-expanded) { align-self: flex-start; }
 }
+
+.dashboard-payment.payment-dp { background: #f6ead4; color: #8a5a24; }
