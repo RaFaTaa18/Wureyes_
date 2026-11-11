@@ -175,8 +175,7 @@
             "wureyes_user"
           );
 
-          window.location.href =
-            "/admin/login";
+          window.location.assign("/admin/login");
 
           return;
         }
@@ -205,52 +204,13 @@ setReceiptBooking((current) => {
 
         const urls: Record<number, string> = {};
   const editedUrls: Record<number, string> = {};
-  const dates: Record<number, string> = {};
-  const amounts: Record<number, string> = {};
-  const feeAmounts: Record<number, string> = {};
-  const feeDescriptions: Record<number, string> = {};
-
-  result.data.forEach(
-    (booking: Booking) => {
-      if (booking.payment_date) {
-        dates[booking.id] =
-          booking.payment_date.substring(0, 10);
-      }
-
-      if (
-        booking.payment_amount !== null &&
-        booking.payment_amount !== undefined
-      ) {
-        amounts[booking.id] =
-          String(booking.payment_amount);
-      }
-
-      urls[booking.id] =
-        booking.drive_folder_url || "";
-
-      editedUrls[booking.id] =
-        booking.edited_drive_folder_url || "";
-
-      amounts[booking.id] =
-    booking.payment_amount != null
-      ? String(booking.payment_amount)
-      : "";
-
-      feeAmounts[booking.id] = String(
-    booking.additional_fee_amount ?? 0
-  );
-
-  feeDescriptions[booking.id] =
-    booking.additional_fee_description ?? "";
-    }
-  );
+  result.data.forEach((booking: Booking) => {
+    urls[booking.id] = booking.drive_folder_url || "";
+    editedUrls[booking.id] = booking.edited_drive_folder_url || "";
+  });
 
   setDriveUrls(urls);
   setEditedDriveUrls(editedUrls);
-  setPaymentDates(dates);
-  setPaymentAmounts(amounts);
-  setAdditionalFees(feeAmounts);
-  setAdditionalFeeDescriptions(feeDescriptions);
 
       } catch (error) {
         setError(
