@@ -1,5 +1,6 @@
 import express from "express";
 import pool from "../db.js";
+import { calculateInvoiceTotal, calculatePaymentSummary, validatePaymentTransaction } from "../utils/paymentRules.js";
 import { createRateLimiter } from "../middlware/rateLimit.js";
 import {
   authenticateToken,
@@ -477,7 +478,8 @@ router.get(
         [id]
       );
       const totalPaid = transactions.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-      const invoiceTotal = Number(bookings[0].service_price || 0) + Number(bookings[0].additional_fee_amount || 0);
+      const invoiceTotal = calculateInvoiceTotal(bookings[0].service_price, bookings[0].additional_fee_amount);
+      const paymentSummary = calculatePaymentSummary(invoiceTotal, totalPaid);
 
       return res.json({
         success: true,
@@ -486,8 +488,8 @@ router.get(
           invoice_total: invoiceTotal,
           additional_fee_amount: Number(bookings[0].additional_fee_amount || 0),
           additional_fee_description: bookings[0].additional_fee_description || "",
-          total_paid: Number(totalPaid.toFixed(2)),
-          remaining_amount: Math.max(0, Number((invoiceTotal - totalPaid).toFixed(2))),
+          total_paid: paymentSummary.totalPaid,
+          remaining_amount: paymentSummary.remainingAmount,
           transactions: transactions.map((item) => ({
             ...item,
             amount: Number(item.amount),
@@ -573,31 +575,24 @@ router.post(
         return res.status(400).json({ success: false, message: "Keterangan biaya tambahan maksimal 255 karakter." });
       }
 
-      const invoiceTotal = Number(booking.service_price || 0) + additionalFee;
+      const invoiceTotal = calculateInvoiceTotal(booking.service_price, additionalFee);
       const [sumRows] = await connection.query(
         "SELECT COALESCE(SUM(amount), 0) AS total_paid FROM booking_payment_transactions WHERE booking_id = ?",
         [id]
       );
       const totalBefore = Number(sumRows[0].total_paid || 0);
-      const remainingBefore = Number((invoiceTotal - totalBefore).toFixed(2));
+      const validationError = validatePaymentTransaction({
+        transactionType: transaction_type,
+        amount,
+        totalPaid: totalBefore,
+        invoiceTotal,
+      });
+      if (validationError) {
+        await connection.rollback();
+        return res.status(400).json({ success: false, message: validationError });
+      }
       const totalAfter = Number((totalBefore + amount).toFixed(2));
-
-      if (remainingBefore <= 0 || amount > remainingBefore + 0.009) {
-        await connection.rollback();
-        return res.status(400).json({ success: false, message: "Nominal pembayaran melebihi sisa tagihan." });
-      }
-      if (transaction_type === "dp" && (totalBefore > 0 || amount >= invoiceTotal)) {
-        await connection.rollback();
-        return res.status(400).json({ success: false, message: "DP hanya dapat dicatat sebagai pembayaran pertama dan harus lebih kecil dari total tagihan." });
-      }
-      if (transaction_type === "installment" && (totalBefore <= 0 || amount >= remainingBefore - 0.009)) {
-        await connection.rollback();
-        return res.status(400).json({ success: false, message: "Cicilan tambahan harus menyisakan tagihan. Gunakan Pelunasan untuk pembayaran terakhir." });
-      }
-      if (transaction_type === "final" && Math.abs(amount - remainingBefore) > 0.009) {
-        await connection.rollback();
-        return res.status(400).json({ success: false, message: "Nominal pelunasan harus sama dengan sisa tagihan." });
-      }
+      const paymentSummary = calculatePaymentSummary(invoiceTotal, totalAfter);
 
       await connection.query(
         `
@@ -608,7 +603,7 @@ router.post(
         [id, transaction_type, amount, `${payment_date} 12:00:00`, notes.trim() || null, req.user.id || null]
       );
 
-      const paymentStatus = totalAfter >= invoiceTotal - 0.009 ? "paid" : "dp";
+      const paymentStatus = paymentSummary.paymentStatus;
       const [latestPaymentRows] = await connection.query(
         "SELECT MAX(payment_date) AS latest_payment_date FROM booking_payment_transactions WHERE booking_id = ?",
         [id]
@@ -636,7 +631,7 @@ router.post(
           payment_status: paymentStatus,
           invoice_total: invoiceTotal,
           total_paid: totalAfter,
-          remaining_amount: Math.max(0, Number((invoiceTotal - totalAfter).toFixed(2))),
+          remaining_amount: paymentSummary.remainingAmount,
           payment_date,
           additional_fee_amount: additionalFee,
           additional_fee_description: feeDescription || "",
