@@ -68,7 +68,7 @@ export default function AdminMessages() {
   }
 
   useEffect(() => {
-    loadMessages();
+    void Promise.resolve().then(() => loadMessages());
   }, []);
 
   async function updateStatus(
