@@ -169,7 +169,16 @@ router.get("/:token", publicTrackingLimit, async (req, res) => {
       ORDER BY created_at DESC, id DESC
       LIMIT 30
     `, [booking.id]);
+    const [paymentHistory] = await pool.query(`
+      SELECT transaction_type, amount,
+        DATE_FORMAT(payment_date, '%Y-%m-%d') AS payment_date
+      FROM booking_payment_transactions
+      WHERE booking_id = ?
+      ORDER BY payment_date ASC, id ASC
+    `, [booking.id]);
     const total = Number(booking.service_price || 0) + Number(booking.additional_fee_amount || 0);
+    const totalPaid = Number(paymentHistory.reduce((sum, item) => sum + Number(item.amount || 0), 0).toFixed(2));
+    const paymentStatus = totalPaid >= total - 0.009 ? "paid" : totalPaid > 0 ? "dp" : "unpaid";
     const currentStage = booking.current_stage || (booking.status === "completed" ? "final_delivery" : booking.status === "confirmed" ? "booking_confirmed" : "booking_received");
     res.set("Cache-Control", "no-store");
     res.json({
@@ -180,10 +189,15 @@ router.get("/:token", publicTrackingLimit, async (req, res) => {
         event_date: booking.event_date,
         location: booking.location,
         booking_status: booking.status,
-        payment_status: booking.payment_status,
-        payment_amount: booking.payment_amount === null ? null : Number(booking.payment_amount),
+        payment_status: paymentStatus,
+        payment_amount: totalPaid,
         total_amount: total,
-        remaining_amount: Math.max(0, total - Number(booking.payment_amount || 0)),
+        remaining_amount: Math.max(0, Number((total - totalPaid).toFixed(2))),
+        payment_history: paymentHistory.map((item) => ({
+          transaction_type: item.transaction_type,
+          amount: Number(item.amount),
+          payment_date: item.payment_date,
+        })),
         current_stage: currentStage,
         current_stage_label: STAGE_LABELS[currentStage] || "Dalam proses",
         client_note: booking.client_note,
