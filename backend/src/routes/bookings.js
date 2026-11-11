@@ -205,9 +205,10 @@ router.put(
   authenticateToken,
   requireAdmin,
   async (req, res) => {
+    let connection;
+
     try {
       const { id } = req.params;
-
       const {
         client_name,
         email,
@@ -216,18 +217,15 @@ router.put(
         event_date,
         location,
         message,
-	edited_drive_folder_url,
-      } = req.body;
-
-      // ===============================
-      // VALIDATION
-      // ===============================
+        edited_drive_folder_url,
+      } = req.body ?? {};
 
       if (
         !client_name ||
         !email ||
         !phone ||
-        !service_id ||
+        !Number.isSafeInteger(Number(service_id)) ||
+        Number(service_id) <= 0 ||
         !event_date
       ) {
         return res.status(400).json({
@@ -237,43 +235,44 @@ router.put(
         });
       }
 
-      // ===============================
-      // CHECK BOOKING
-      // ===============================
+      connection = await pool.getConnection();
+      await connection.beginTransaction();
 
-      const [existingBooking] = await pool.query(
+      // Lock the booking row so a concurrent payment transaction cannot race
+      // with a service change and lower the invoice below the amount received.
+      const [existingBooking] = await connection.query(
         `
         SELECT id, service_id, service_price_snapshot, additional_fee_amount
         FROM bookings
         WHERE id = ?
         LIMIT 1
+        FOR UPDATE
         `,
         [id]
       );
 
       if (existingBooking.length === 0) {
+        await connection.rollback();
         return res.status(404).json({
           success: false,
           message: "Booking not found",
         });
       }
 
-      // ===============================
-      // CHECK SERVICE
-      // ===============================
-
-      const [services] = await pool.query(
+      const [services] = await connection.query(
         `
         SELECT id, price
         FROM services
         WHERE id = ?
-        AND is_active = TRUE
+          AND is_active = TRUE
         LIMIT 1
+        FOR SHARE
         `,
-        [service_id]
+        [Number(service_id)]
       );
 
       if (services.length === 0) {
+        await connection.rollback();
         return res.status(400).json({
           success: false,
           message: "Service not found or inactive",
@@ -291,10 +290,10 @@ router.put(
         newServicePrice: selectedService.price,
       });
 
-      // Do not allow a service change to reduce the invoice below payments
-      // already received. Payment history remains append-only and untouched.
+      // Keep payment history append-only and reject a service change that
+      // would make the invoice smaller than payments already received.
       if (serviceChanged) {
-        const [paymentRows] = await pool.query(
+        const [paymentRows] = await connection.query(
           `
           SELECT COALESCE(SUM(amount), 0) AS total_paid
           FROM booking_payment_transactions
@@ -309,18 +308,16 @@ router.put(
         );
 
         if (newInvoiceTotal + 0.009 < totalPaid) {
+          await connection.rollback();
           return res.status(400).json({
             success: false,
-            message: "Layanan baru membuat total tagihan lebih kecil dari pembayaran yang sudah diterima. Sesuaikan biaya atau pilih layanan lain.",
+            message:
+              "Layanan baru membuat total tagihan lebih kecil dari pembayaran yang sudah diterima. Sesuaikan biaya atau pilih layanan lain.",
           });
         }
       }
 
-      // ===============================
-      // UPDATE BOOKING
-      // ===============================
-
-      await pool.query(
+      await connection.query(
         `
         UPDATE bookings
         SET
@@ -349,20 +346,22 @@ router.put(
         ]
       );
 
-      res.json({
+      await connection.commit();
+
+      return res.json({
         success: true,
         message: "Booking updated successfully",
       });
     } catch (error) {
-      console.error(
-        "Update booking error:",
-        error
-      );
+      if (connection) await connection.rollback();
+      console.error("Update booking error:", error);
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: "Failed to update booking",
       });
+    } finally {
+      if (connection) connection.release();
     }
   }
 );
