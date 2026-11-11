@@ -47,7 +47,7 @@ router.get("/admin/bookings", authenticateToken, requireAdmin, async (_req, res)
   try {
     const [rows] = await pool.query(`
       SELECT b.id, b.client_name, b.event_date, b.status, b.payment_status,
-        b.payment_amount, s.price AS service_price, b.additional_fee_amount,
+        b.payment_amount, COALESCE(b.service_price_snapshot, s.price) AS service_price, b.additional_fee_amount,
         s.name AS service_name, p.current_stage, p.client_note,
         p.internal_note, p.estimated_delivery_date, p.updated_at,
         (t.id IS NOT NULL AND t.revoked_at IS NULL) AS tracking_active
@@ -151,7 +151,7 @@ router.get("/:token", publicTrackingLimit, async (req, res) => {
     const [rows] = await pool.query(`
       SELECT b.id, b.client_name, b.event_date, b.location, b.status,
         b.payment_status, b.payment_amount, b.additional_fee_amount,
-        s.name AS service_name, s.price AS service_price,
+        s.name AS service_name, COALESCE(b.service_price_snapshot, s.price) AS service_price,
         p.current_stage, p.client_note, p.estimated_delivery_date,
         b.edited_drive_folder_url, b.selection_token
       FROM booking_tracking_tokens t
