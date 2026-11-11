@@ -1,6 +1,7 @@
 import express from "express";
 import pool from "../db.js";
 import { calculateInvoiceTotal, calculatePaymentSummary, validatePaymentTransaction } from "../utils/paymentRules.js";
+import { resolveServicePriceSnapshot } from "../utils/bookingPriceSnapshot.js";
 import { createRateLimiter } from "../middlware/rateLimit.js";
 import {
   authenticateToken,
@@ -242,7 +243,7 @@ router.put(
 
       const [existingBooking] = await pool.query(
         `
-        SELECT id
+        SELECT id, service_id, service_price_snapshot, additional_fee_amount
         FROM bookings
         WHERE id = ?
         LIMIT 1
@@ -263,7 +264,7 @@ router.put(
 
       const [services] = await pool.query(
         `
-        SELECT id
+        SELECT id, price
         FROM services
         WHERE id = ?
         AND is_active = TRUE
@@ -279,6 +280,42 @@ router.put(
         });
       }
 
+      const currentBooking = existingBooking[0];
+      const selectedService = services[0];
+      const serviceChanged =
+        String(currentBooking.service_id) !== String(selectedService.id);
+      const servicePriceSnapshot = resolveServicePriceSnapshot({
+        existingServiceId: currentBooking.service_id,
+        newServiceId: selectedService.id,
+        existingSnapshot: currentBooking.service_price_snapshot,
+        newServicePrice: selectedService.price,
+      });
+
+      // Do not allow a service change to reduce the invoice below payments
+      // already received. Payment history remains append-only and untouched.
+      if (serviceChanged) {
+        const [paymentRows] = await pool.query(
+          `
+          SELECT COALESCE(SUM(amount), 0) AS total_paid
+          FROM booking_payment_transactions
+          WHERE booking_id = ?
+          `,
+          [id]
+        );
+        const totalPaid = Number(paymentRows[0]?.total_paid || 0);
+        const newInvoiceTotal = calculateInvoiceTotal(
+          selectedService.price,
+          currentBooking.additional_fee_amount
+        );
+
+        if (newInvoiceTotal + 0.009 < totalPaid) {
+          return res.status(400).json({
+            success: false,
+            message: "Layanan baru membuat total tagihan lebih kecil dari pembayaran yang sudah diterima. Sesuaikan biaya atau pilih layanan lain.",
+          });
+        }
+      }
+
       // ===============================
       // UPDATE BOOKING
       // ===============================
@@ -291,21 +328,23 @@ router.put(
           email = ?,
           phone = ?,
           service_id = ?,
+          service_price_snapshot = ?,
           event_date = ?,
           location = ?,
           message = ?,
-	  edited_drive_folder_url = ?
+          edited_drive_folder_url = ?
         WHERE id = ?
         `,
         [
           client_name,
           email,
           phone,
-          service_id,
+          selectedService.id,
+          servicePriceSnapshot,
           event_date,
           location || null,
           message || null,
-	  edited_drive_folder_url || null,
+          edited_drive_folder_url || null,
           id,
         ]
       );
