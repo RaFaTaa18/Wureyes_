@@ -152,7 +152,7 @@ export default function AdminDashboard() {
   }), [bookings]);
   const revenueYears = useMemo(() => {
     const years = bookings
-      .filter((booking) => booking.payment_status === "paid" && booking.payment_date)
+      .filter((booking) => (booking.payment_status === "paid" || booking.payment_status === "dp") && booking.payment_date)
       .map((booking) => Number(booking.payment_date!.slice(0, 4)))
       .filter((year) => Number.isInteger(year) && year > 0);
     return Array.from(new Set([new Date().getFullYear(), ...years])).sort((a, b) => b - a);
@@ -169,8 +169,7 @@ export default function AdminDashboard() {
       const year = Number(paymentDate.slice(0, 4));
       const month = Number(paymentDate.slice(5, 7)) - 1;
       const invoiceTotal =
-        Number(booking.service_price ?? 0) +
-        Number(booking.additional_fee_amount ?? 0);
+        Number(booking.payment_amount ?? 0);
 
       if (
         year === selectedRevenueYear &&
@@ -198,8 +197,7 @@ export default function AdminDashboard() {
     const year = Number(paymentDate.slice(0, 4));
     const month = Number(paymentDate.slice(5, 7)) - 1;
     const invoiceTotal =
-      Number(booking.service_price ?? 0) +
-      Number(booking.additional_fee_amount ?? 0);
+      Number(booking.payment_amount ?? 0);
 
     return (
       year === selectedRevenueYear &&
