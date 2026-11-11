@@ -1,6 +1,7 @@
 ﻿  import { useEffect, useMemo, useState } from "react";
   import { createPortal } from "react-dom";
   import "./AdminBookings.css";
+  import "./AdminPaymentStatus.css";
 
   interface Booking {
     id: number;
