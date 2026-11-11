@@ -75,10 +75,10 @@ export default function PhotoSelection() {
 
   useEffect(() => {
     async function loadGallery() {
-      if (!token) {
-        throw new Error("Link seleksi tidak valid.");
-      }
       try {
+        if (!token) {
+          throw new Error("Link seleksi tidak valid.");
+        }
         setLoading(true);
         setError("");
 
