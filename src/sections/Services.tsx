@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import "./Services.css";
 
+const API_URL = import.meta.env.VITE_API_URL || "";
+
 interface Service {
   id: number;
   name: string;
@@ -74,8 +76,6 @@ export default function Services() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const sectionRef = useRef<HTMLElement | null>(null);
-  const API_URL = import.meta.env.VITE_API_URL || "";
-
   useEffect(() => {
     fetch(`${API_URL}/api/services`)
       .then((response) => response.json())
