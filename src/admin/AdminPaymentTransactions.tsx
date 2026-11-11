@@ -80,7 +80,7 @@ export default function AdminPaymentTransactions({ bookingId, onSaved }: Props) 
     if (response.status === 401) {
       sessionStorage.removeItem("wureyes_token");
       sessionStorage.removeItem("wureyes_user");
-      window.location.href = "/admin/login";
+      window.location.assign("/admin/login");
       throw new Error("Sesi admin berakhir. Silakan login kembali.");
     }
     if (!response.ok || !result.success) {
@@ -100,7 +100,6 @@ export default function AdminPaymentTransactions({ bookingId, onSaved }: Props) 
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
     loadTransactions()
       .catch((reason) => {
         if (active) setError(reason instanceof Error ? reason.message : "Gagal memuat pembayaran.");
