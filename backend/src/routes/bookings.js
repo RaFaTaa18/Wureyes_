@@ -397,6 +397,39 @@ router.patch(
   }
 );
 
+// Admin: transaction-level revenue records for dashboard reporting.
+router.get(
+  "/payment-transactions",
+  authenticateToken,
+  requireAdmin,
+  async (_req, res) => {
+    try {
+      const [rows] = await pool.query(`
+        SELECT
+          t.id,
+          t.booking_id,
+          t.transaction_type,
+          t.amount,
+          DATE_FORMAT(t.payment_date, '%Y-%m-%d') AS payment_date,
+          t.notes,
+          b.client_name,
+          s.name AS service_name
+        FROM booking_payment_transactions t
+        INNER JOIN bookings b ON b.id = t.booking_id
+        INNER JOIN services s ON s.id = b.service_id
+        ORDER BY t.payment_date DESC, t.id DESC
+      `);
+      return res.json({
+        success: true,
+        data: rows.map((item) => ({ ...item, amount: Number(item.amount) })),
+      });
+    } catch (error) {
+      console.error("Get all payment transactions error:", error);
+      return res.status(500).json({ success: false, message: "Gagal memuat data transaksi pembayaran." });
+    }
+  }
+);
+
 // =====================================================
 // PAYMENT TRANSACTION HISTORY - ADMIN ONLY
 // =====================================================
