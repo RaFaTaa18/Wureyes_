@@ -101,3 +101,28 @@ test("migration backfills only positive historical payments and does not fabrica
   );
   assert.match(sql, /WHERE b\.payment_amount IS NOT NULL\s+AND b\.payment_amount > 0/);
 });
+
+test("price snapshot migration backfills existing bookings without deleting booking data", async () => {
+  const sql = await readFile(
+    new URL("../database/migrations/003_booking_service_price_snapshot.sql", import.meta.url),
+    "utf8"
+  );
+  assert.match(sql, /ADD COLUMN service_price_snapshot DECIMAL\(12,2\) NULL/);
+  assert.match(sql, /UPDATE bookings b\s+INNER JOIN services s ON s\.id = b\.service_id\s+SET b\.service_price_snapshot = s\.price/);
+  assert.match(sql, /MODIFY COLUMN service_price_snapshot DECIMAL\(12,2\) NOT NULL/);
+  assert.doesNotMatch(sql, /DELETE\s+FROM\s+bookings/i);
+});
+
+test("booking creation captures the current service price and all invoice readers prefer the snapshot", async () => {
+  const bookings = await readFile(new URL("../src/routes/bookings.js", import.meta.url), "utf8");
+  const tracking = await readFile(new URL("../src/routes/tracking.js", import.meta.url), "utf8");
+  assert.match(bookings, /service_price_snapshot,\s*event_date/);
+  assert.match(bookings, /services\[0\]\.price/);
+  assert.match(bookings, /COALESCE\(b\.service_price_snapshot, s\.price\) AS service_price/);
+  assert.match(tracking, /COALESCE\(b\.service_price_snapshot, s\.price\) AS service_price/);
+});
+
+test("invoice totals cannot be reduced below previously received payments", async () => {
+  const bookings = await readFile(new URL("../src/routes/bookings.js", import.meta.url), "utf8");
+  assert.match(bookings, /invoiceTotal \+ 0\.009 < totalBefore/);
+});
