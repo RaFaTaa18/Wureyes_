@@ -72,13 +72,13 @@ export default function AdminWorkflow() {
       setError("");
       const result = await request("/api/tracking/admin/bookings");
       setItems(result.data);
-      if (selectedId && !result.data.some((item: WorkflowBooking) => item.id === selectedId)) setSelectedId(null);
+      setSelectedId((currentId) => currentId && !result.data.some((item: WorkflowBooking) => item.id === currentId) ? null : currentId);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Gagal memuat data.");
     } finally {
       setLoading(false);
     }
-  }, [request, selectedId]);
+  }, [request]);
 
   useEffect(() => {
     void load();
