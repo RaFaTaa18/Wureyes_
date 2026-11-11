@@ -1,4 +1,4 @@
-﻿  import { useEffect, useMemo, useState } from "react";
+﻿  import { useCallback, useEffect, useMemo, useState } from "react";
   import { createPortal } from "react-dom";
   import "./AdminBookings.css";
   import "./AdminPaymentStatus.css";
@@ -141,7 +141,7 @@
       "wureyes_token"
     );
 
-    async function loadBookings() {
+    const loadBookings = useCallback(async () => {
       if (!token) {
         setError(
           "Session expired. Please login again."
@@ -221,9 +221,9 @@ setReceiptBooking((current) => {
       } finally {
         setLoading(false);
       }
-    }
+    }, [token]);
 
-    async function loadServices() {
+    const loadServices = useCallback(async () => {
     try {
       const response = await fetch(
         `${API_URL}/api/services`
@@ -240,12 +240,22 @@ setReceiptBooking((current) => {
         error
       );
     }
-  }
+  }, []);
 
     useEffect(() => {
-    loadBookings();
-    loadServices();
-  }, []);
+      let active = true;
+
+      Promise.resolve().then(() => {
+        if (!active) return;
+
+        void loadBookings();
+        void loadServices();
+      });
+
+      return () => {
+        active = false;
+      };
+    }, [loadBookings, loadServices]);
 
     function openEditBooking(booking: Booking) {
     setReceiptBooking(null);
@@ -323,8 +333,7 @@ setReceiptBooking((current) => {
           "wureyes_user"
         );
 
-        window.location.href =
-          "/admin/login";
+        window.location.assign("/admin/login");
 
         return;
       }
@@ -560,8 +569,7 @@ setReceiptBooking((current) => {
             "wureyes_user"
           );
 
-          window.location.href =
-            "/admin/login";
+          window.location.assign("/admin/login");
 
           return;
         }
@@ -662,8 +670,7 @@ setReceiptBooking((current) => {
             "wureyes_user"
           );
 
-          window.location.href =
-            "/admin/login";
+          window.location.assign("/admin/login");
 
           return;
         }
@@ -754,8 +761,7 @@ setReceiptBooking((current) => {
             "wureyes_user"
           );
 
-          window.location.href =
-            "/admin/login";
+          window.location.assign("/admin/login");
 
           return;
         }
