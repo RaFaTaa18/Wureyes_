@@ -5,6 +5,7 @@ import AdminPortfolio from "./AdminPortfolio";
 import AdminServices from "./AdminServices";
 import AdminBookings from "./AdminBookings";
 import AdminMessages from "./AdminMessages";
+import AdminWorkflow from "./AdminWorkflow";
 
 import "./AdminDashboard.css";
 import "./AdminWarmEditorial.css";
@@ -267,6 +268,14 @@ export default function AdminDashboard() {
           </button>
 
           <button
+            className={activePage === "workflow" ? "active" : ""}
+            aria-current={activePage === "workflow" ? "page" : undefined}
+            onClick={() => setActivePage("workflow")}
+          >
+            Workflow
+          </button>
+
+          <button
             className={activePage === "messages" ? "active" : ""}
             aria-current={activePage === "messages" ? "page" : undefined}
             onClick={() => setActivePage("messages")}
@@ -292,6 +301,7 @@ export default function AdminDashboard() {
               {activePage === "portfolio" && "Portfolio"}
               {activePage === "services" && "Services"}
               {activePage === "bookings" && "Bookings"}
+              {activePage === "workflow" && "Workflow"}
               {activePage === "messages" && "Messages"}
             </h1>
           </div>
@@ -374,6 +384,7 @@ export default function AdminDashboard() {
             {activePage === "portfolio" && <AdminPortfolio />}
             {activePage === "services" && <AdminServices />}
             {activePage === "bookings" && <AdminBookings />}
+            {activePage === "workflow" && <AdminWorkflow />}
             {activePage === "messages" && <AdminMessages />}
           </>
         )}
