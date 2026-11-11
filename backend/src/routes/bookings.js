@@ -419,6 +419,7 @@ router.patch(
       // 1. Validate payment status
       const allowedPaymentStatuses = [
         "unpaid",
+        "dp",
         "paid",
       ];
 
@@ -436,9 +437,10 @@ router.patch(
       // 2. Check whether booking exists
       const [existing] = await pool.query(
         `
-        SELECT id
-        FROM bookings
-        WHERE id = ?
+        SELECT b.id, s.price AS service_price
+        FROM bookings b
+        INNER JOIN services s ON s.id = b.service_id
+        WHERE b.id = ?
         LIMIT 1
         `,
         [id]
@@ -455,7 +457,7 @@ router.patch(
       let amount = null;
       let selectedPaymentDate = null;
 
-      if (payment_status === "paid") {
+      if (payment_status !== "unpaid") {
         // Validate amount
         if (
           payment_amount === null ||
@@ -544,6 +546,20 @@ if (
     success: false,
     message:
       "Deskripsi biaya tambahan maksimal 255 karakter.",
+  });
+}
+
+const invoiceTotal = Number(existing[0].service_price ?? 0) + additionalFee;
+if (payment_status === "dp" && amount >= invoiceTotal) {
+  return res.status(400).json({
+    success: false,
+    message: "Nominal DP harus lebih kecil dari total tagihan. Pilih Lunas jika membayar seluruh tagihan.",
+  });
+}
+if (payment_status === "paid" && Math.abs(amount - invoiceTotal) > 0.01) {
+  return res.status(400).json({
+    success: false,
+    message: "Nominal pembayaran lunas harus sama dengan total tagihan.",
   });
 }
 
