@@ -7,6 +7,12 @@
 -- IMPORTANT:
 -- 1. Run 001_booking_workflow_tracking.sql first so the booking workflow schema is ready.
 -- 2. Do not run this migration on production until the application changes are tested.
+-- 3. Booking #3 (Natasyah Aza Sabila) is a confirmed four-person group booking:
+--    Rp80,000 per person = Rp320,000 total, fully paid. The legacy
+--    payment_amount column contains only the per-person rate (Rp80,000), while
+--    additional_fee_amount contains the remaining group value (Rp240,000).
+--    Import the confirmed full payment as Rp320,000 without changing either
+--    legacy column. The note records why this one historical amount differs.
 
 CREATE TABLE IF NOT EXISTS booking_payment_transactions (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -45,9 +51,17 @@ INSERT IGNORE INTO booking_payment_transactions (
 SELECT
   b.id,
   'legacy',
-  b.payment_amount,
+  CASE
+    WHEN b.id = 3 THEN 320000.00
+    ELSE b.payment_amount
+  END,
   b.payment_date,
-  'Imported from the existing bookings.payment_amount/payment_date fields.',
+  CASE
+    WHEN b.id = 3 THEN
+      'Imported as Rp320,000: confirmed fully paid group booking for 4 people at Rp80,000 per person. Legacy payment_amount stores the per-person rate; additional_fee_amount stores the remaining group value.'
+    ELSE
+      'Imported from the existing bookings.payment_amount/payment_date fields.'
+  END,
   NULL,
   b.id
 FROM bookings b
