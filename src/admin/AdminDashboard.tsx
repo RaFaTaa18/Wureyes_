@@ -10,6 +10,8 @@ import AdminWorkflow from "./AdminWorkflow";
 import "./AdminDashboard.css";
 import "./AdminWarmEditorial.css";
 
+const API_URL = import.meta.env.VITE_API_URL || "";
+
 interface DashboardStats {
   portfolio: number;
   services: number;
@@ -50,8 +52,6 @@ interface User {
 }
 
 export default function AdminDashboard() {
-  const API_URL = import.meta.env.VITE_API_URL || "";
-
   const navigate = useNavigate();
 
   const [activePage, setActivePage] =
@@ -60,8 +60,15 @@ export default function AdminDashboard() {
   const [stats, setStats] =
     useState<DashboardStats | null>(null);
 
-  const [user, setUser] =
-    useState<User | null>(null);
+  const [user] = useState<User | null>(() => {
+    const savedUser = sessionStorage.getItem("wureyes_user");
+    if (!savedUser) return null;
+    try {
+      return JSON.parse(savedUser) as User;
+    } catch {
+      return null;
+    }
+  });
   const [profileExpanded, setProfileExpanded] = useState(false);
 
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -77,16 +84,9 @@ export default function AdminDashboard() {
     const token =
       sessionStorage.getItem("wureyes_token");
 
-    const savedUser =
-      sessionStorage.getItem("wureyes_user");
-
     if (!token) {
       navigate("/admin/login");
       return;
-    }
-
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
     }
 
     async function loadDashboard(initialLoad = false) {
