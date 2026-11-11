@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "./AdminMessages.css";
+
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 interface Message {
   id: number;
@@ -15,11 +17,9 @@ export default function AdminMessages() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const API_URL = import.meta.env.VITE_API_URL || "";
-
   const token = sessionStorage.getItem("wureyes_token");
 
-  async function loadMessages() {
+  const loadMessages = useCallback(async () => {
     if (!token) {
       setError("Session expired. Please login again.");
       setLoading(false);
@@ -65,11 +65,11 @@ export default function AdminMessages() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [token]);
 
   useEffect(() => {
-    void Promise.resolve().then(() => loadMessages());
-  }, []);
+    void loadMessages();
+  }, [loadMessages]);
 
   async function updateStatus(
     id: number,
