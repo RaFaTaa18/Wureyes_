@@ -67,7 +67,7 @@ router.get(
           b.edited_drive_folder_url,
           b.selection_token,
           s.name AS service_name,
-          s.price AS service_price
+          COALESCE(b.service_price_snapshot, s.price) AS service_price
         FROM bookings b
         INNER JOIN services s
           ON b.service_id = s.id
@@ -135,7 +135,7 @@ router.post("/", bookingSubmissionRateLimit, async (req, res) => {
 
     const [services] = await pool.query(
       `
-      SELECT id
+      SELECT id, price
       FROM services
       WHERE id = ?
       AND is_active = TRUE
@@ -158,17 +158,19 @@ router.post("/", bookingSubmissionRateLimit, async (req, res) => {
         email,
         phone,
         service_id,
+        service_price_snapshot,
         event_date,
         location,
         message
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         client_name,
         email,
         phone,
         service_id,
+        services[0].price,
         event_date,
         location || null,
         message || null,
@@ -448,7 +450,7 @@ router.get(
     try {
       const [bookings] = await pool.query(
         `
-        SELECT b.id, b.additional_fee_amount, b.additional_fee_description, s.price AS service_price
+        SELECT b.id, b.additional_fee_amount, b.additional_fee_description, COALESCE(b.service_price_snapshot, s.price) AS service_price
         FROM bookings b
         INNER JOIN services s ON s.id = b.service_id
         WHERE b.id = ?
@@ -544,7 +546,7 @@ router.post(
       const [bookings] = await connection.query(
         `
         SELECT b.id, b.additional_fee_amount, b.additional_fee_description,
-          s.price AS service_price
+          COALESCE(b.service_price_snapshot, s.price) AS service_price
         FROM bookings b
         INNER JOIN services s ON s.id = b.service_id
         WHERE b.id = ?
@@ -581,6 +583,10 @@ router.post(
         [id]
       );
       const totalBefore = Number(sumRows[0].total_paid || 0);
+      if (invoiceTotal + 0.009 < totalBefore) {
+        await connection.rollback();
+        return res.status(400).json({ success: false, message: "Total tagihan tidak boleh lebih kecil dari pembayaran yang sudah diterima. Periksa kembali biaya tambahan." });
+      }
       const validationError = validatePaymentTransaction({
         transactionType: transaction_type,
         amount,
