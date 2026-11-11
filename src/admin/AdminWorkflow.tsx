@@ -80,7 +80,9 @@ export default function AdminWorkflow() {
     }
   }
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    void Promise.resolve().then(() => load());
+  }, []);
 
   function choose(item: WorkflowBooking) {
     setSelectedId(item.id);
