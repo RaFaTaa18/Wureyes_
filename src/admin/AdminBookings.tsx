@@ -1636,11 +1636,13 @@ const amount =
       </div>
 
       <span
-        className={`payment-status ${
+        `payment-status ${
           booking.payment_status === "paid"
             ? "paid"
-            : "unpaid"
-        }`}
+            : booking.payment_status === "dp"
+              ? "dp"
+              : "unpaid"
+        }`
       >
         {booking.payment_status === "paid"
           ? "LUNAS"
@@ -1864,7 +1866,7 @@ const amount =
           onClick={() =>
             updatePayment(
               booking.id,
-              "paid",
+              booking.payment_status === "dp" ? "dp" : "paid",
               booking.service_price
             )
           }
