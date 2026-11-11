@@ -33,6 +33,16 @@ interface Booking {
   created_at: string;
 }
 
+interface PaymentTransaction {
+  id: number;
+  booking_id: number;
+  transaction_type: string;
+  amount: number;
+  payment_date: string | null;
+  client_name: string;
+  service_name: string;
+}
+
 interface User {
   name: string;
   email: string;
@@ -55,6 +65,7 @@ export default function AdminDashboard() {
   const [profileExpanded, setProfileExpanded] = useState(false);
 
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [paymentTransactions, setPaymentTransactions] = useState<PaymentTransaction[]>([]);
   const [bookingsError, setBookingsError] = useState("");
 
   const [loading, setLoading] =
@@ -81,9 +92,10 @@ export default function AdminDashboard() {
     async function loadDashboard(initialLoad = false) {
       try {
         const headers = { Authorization: "Bearer " + token };
-        const [response, bookingsResponse] = await Promise.all([
+        const [response, bookingsResponse, transactionsResponse] = await Promise.all([
           fetch(API_URL + "/api/dashboard/stats", { headers }),
           fetch(API_URL + "/api/bookings", { headers }),
+          fetch(API_URL + "/api/bookings/payment-transactions", { headers }),
         ]);
 
         const result = await response.json();
@@ -116,11 +128,23 @@ export default function AdminDashboard() {
           navigate("/admin/login");
           return;
         }
+        if (transactionsResponse.status === 401) {
+          sessionStorage.removeItem("wureyes_token");
+          sessionStorage.removeItem("wureyes_user");
+          navigate("/admin/login");
+          return;
+        }
         if (bookingsResponse.ok) {
           const bookingsResult = await bookingsResponse.json();
           if (bookingsResult.success && Array.isArray(bookingsResult.data)) setBookings(bookingsResult.data);
           else setBookingsError("Data booking belum dapat ditampilkan.");
         } else setBookingsError("Data booking belum dapat ditampilkan.");
+        if (transactionsResponse.ok) {
+          const transactionsResult = await transactionsResponse.json();
+          if (transactionsResult.success && Array.isArray(transactionsResult.data)) {
+            setPaymentTransactions(transactionsResult.data);
+          }
+        }
       } catch (error) {
         console.error(
           "Dashboard error:",
@@ -151,61 +175,43 @@ export default function AdminDashboard() {
     return a.client_name.localeCompare(b.client_name, "id");
   }), [bookings]);
   const revenueYears = useMemo(() => {
-    const years = bookings
-      .filter((booking) => (booking.payment_status === "paid" || booking.payment_status === "dp") && booking.payment_date)
-      .map((booking) => Number(booking.payment_date!.slice(0, 4)))
+    const years = paymentTransactions
+      .filter((transaction) => transaction.payment_date)
+      .map((transaction) => Number(transaction.payment_date!.slice(0, 4)))
       .filter((year) => Number.isInteger(year) && year > 0);
     return Array.from(new Set([new Date().getFullYear(), ...years])).sort((a, b) => b - a);
-  }, [bookings]);
+  }, [paymentTransactions]);
   const monthlyRevenue = useMemo(() => {
     const names = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
     const values = names.map((month) => ({ month, total: 0 }));
 
-    bookings.forEach((booking) => {
-      if ((booking.payment_status !== "paid" && booking.payment_status !== "dp") || !booking.payment_date) return;
-
-      // Match the invoice's TOTAL TAGIHAN: service price + additional fees.
-      const paymentDate = String(booking.payment_date).slice(0, 10);
+    paymentTransactions.forEach((transaction) => {
+      if (!transaction.payment_date) return;
+      const paymentDate = String(transaction.payment_date).slice(0, 10);
       const year = Number(paymentDate.slice(0, 4));
       const month = Number(paymentDate.slice(5, 7)) - 1;
-      const invoiceTotal =
-        Number(booking.payment_amount ?? 0);
+      const amount = Number(transaction.amount ?? 0);
 
-      if (
-        year === selectedRevenueYear &&
-        month >= 0 &&
-        month < 12 &&
-        Number.isFinite(invoiceTotal) &&
-        invoiceTotal > 0
-      ) {
-        values[month].total += invoiceTotal;
+      if (year === selectedRevenueYear && month >= 0 && month < 12 && Number.isFinite(amount) && amount > 0) {
+        values[month].total += amount;
       }
     });
 
     return values;
-  }, [bookings, selectedRevenueYear]);
+  }, [paymentTransactions, selectedRevenueYear]);
   const formatMoney = (value: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value);
   const formatDate = (value: string) => {
     if (!value) return "—";
     const date = new Date(value.length === 10 ? value + "T00:00:00" : value);
     return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric" }).format(date);
   };
-  const selectedMonthDetails = selectedRevenueMonth === null ? [] : bookings.filter((booking) => {
-    if ((booking.payment_status !== "paid" && booking.payment_status !== "dp") || !booking.payment_date) return false;
-
-    const paymentDate = String(booking.payment_date).slice(0, 10);
+  const selectedMonthDetails = selectedRevenueMonth === null ? [] : paymentTransactions.filter((transaction) => {
+    if (!transaction.payment_date) return false;
+    const paymentDate = String(transaction.payment_date).slice(0, 10);
     const year = Number(paymentDate.slice(0, 4));
     const month = Number(paymentDate.slice(5, 7)) - 1;
-    const invoiceTotal =
-      Number(booking.payment_amount ?? 0);
-
-    return (
-      year === selectedRevenueYear &&
-      month === selectedRevenueMonth &&
-      Number.isFinite(invoiceTotal) &&
-      invoiceTotal > 0
-    );
-  }).sort((a, b) => String(a.payment_date ?? "").slice(0, 10).localeCompare(String(b.payment_date ?? "").slice(0, 10)));
+    return year === selectedRevenueYear && month === selectedRevenueMonth && Number(transaction.amount) > 0;
+  }).sort((a, b) => String(a.payment_date ?? "").localeCompare(String(b.payment_date ?? "")));
   const totalRevenue = monthlyRevenue.reduce((sum, item) => sum + item.total, 0);
   const maxRevenue = Math.max(...monthlyRevenue.map((item) => item.total), 1);
 
@@ -363,7 +369,7 @@ export default function AdminDashboard() {
                     {selectedRevenueMonth !== null && <section className="revenue-detail-panel" aria-live="polite">
                       <div className="revenue-detail-heading"><div><p className="dashboard-eyebrow">PAYMENT BREAKDOWN</p><h4>Rincian {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"][selectedRevenueMonth]} {selectedRevenueYear}</h4></div><button type="button" className="revenue-detail-close" onClick={() => setSelectedRevenueMonth(null)} aria-label="Tutup rincian pendapatan">×</button></div>
                       <p className="revenue-detail-total">Total: <strong>{formatMoney(monthlyRevenue[selectedRevenueMonth].total)}</strong></p>
-                      {selectedMonthDetails.length === 0 ? <p className="dashboard-empty">Tidak ada pembayaran pada bulan ini.</p> : <div className="revenue-detail-list">{selectedMonthDetails.map((booking) => <article className="revenue-detail-item" key={booking.id}><div><strong>{booking.service_name || "Service tidak tercantum"}</strong><span>{booking.client_name}</span><small>Tanggal pembayaran: {formatDate(String(booking.payment_date))}</small></div><b>{formatMoney(Number(booking.payment_amount ?? 0))}</b></article>)}</div>}
+                      {selectedMonthDetails.length === 0 ? <p className="dashboard-empty">Tidak ada pembayaran pada bulan ini.</p> : <div className="revenue-detail-list">{selectedMonthDetails.map((transaction) => <article className="revenue-detail-item" key={transaction.id}><div><strong>{transaction.service_name || "Service tidak tercantum"} · {transaction.transaction_type === "dp" ? "DP" : transaction.transaction_type === "final" ? "Pelunasan" : transaction.transaction_type === "legacy" ? "Pembayaran lama" : "Cicilan"}</strong><span>{transaction.client_name}</span><small>Tanggal pembayaran: {formatDate(String(transaction.payment_date))}</small></div><b>{formatMoney(Number(transaction.amount ?? 0))}</b></article>)}</div>}
                     </section>}
                     <p className="revenue-footnote">Pendapatan dihitung dari nominal pembayaran yang benar-benar diterima (termasuk DP) berdasarkan tanggal pembayaran. Pilih tahun untuk melihat rincian per bulan.</p>
                   </article>
