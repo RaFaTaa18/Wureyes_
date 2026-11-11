@@ -12,6 +12,7 @@ interface TrackingData {
   payment_amount: number | null;
   total_amount: number;
   remaining_amount: number;
+  payment_history: { transaction_type: string; amount: number; payment_date: string | null }[];
   current_stage: string;
   current_stage_label: string;
   client_note: string | null;
@@ -89,7 +90,29 @@ export default function BookingTracking() {
           {data.estimated_delivery_date && <div className="tracking-estimate"><small>ESTIMATED DELIVERY</small><strong>{date(data.estimated_delivery_date)}</strong></div>}
         </article>
         <aside className="tracking-side">
-          <article className="tracking-card"><p className="tracking-eyebrow">PAYMENT OVERVIEW</p><h2>{data.payment_status === "paid" ? "Paid in full" : data.payment_status === "dp" ? "Down payment received" : "Awaiting payment"}</h2><div className="tracking-money-row"><span>Total invoice</span><strong>{money(data.total_amount)}</strong></div><div className="tracking-money-row"><span>Paid amount</span><strong>{money(data.payment_amount || 0)}</strong></div><div className="tracking-money-row"><span>Remaining</span><strong>{money(data.remaining_amount)}</strong></div></article>
+          <article className="tracking-card">
+            <p className="tracking-eyebrow">PAYMENT OVERVIEW</p>
+            <h2>{data.payment_status === "paid" ? "Paid in full" : data.payment_status === "dp" ? "Payment in progress" : "Awaiting payment"}</h2>
+            <div className="tracking-money-row"><span>Total invoice</span><strong>{money(data.total_amount)}</strong></div>
+            <div className="tracking-money-row"><span>Paid amount</span><strong>{money(data.payment_amount || 0)}</strong></div>
+            <div className="tracking-money-row"><span>Remaining</span><strong>{money(data.remaining_amount)}</strong></div>
+            {data.payment_history.length > 0 && (
+              <div className="tracking-payment-history">
+                <h3>Payment history</h3>
+                <ul>
+                  {data.payment_history.map((item, index) => (
+                    <li key={item.payment_date + item.transaction_type + index}>
+                      <span>
+                        <strong>{item.transaction_type === "dp" ? "Down payment" : item.transaction_type === "final" ? "Final payment" : item.transaction_type === "legacy" ? "Previous payment" : "Installment"}</strong>
+                        <small>{item.payment_date ? date(item.payment_date) : "Date not recorded"}</small>
+                      </span>
+                      <b>{money(item.amount)}</b>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </article>
           {data.photo_selection_url && <article className="tracking-card"><p className="tracking-eyebrow">PHOTO SELECTION</p><h2>Your photo picks</h2><p>Open your private photo selection gallery.</p><a className="tracking-link" href={data.photo_selection_url}>Open photo gallery ↗</a></article>}
           {data.final_delivery_url && <article className="tracking-card"><p className="tracking-eyebrow">FINAL DELIVERY</p><h2>Your memories are ready.</h2><a className="tracking-link" href={data.final_delivery_url} target="_blank" rel="noreferrer">Open final files ↗</a></article>}
         </aside>
