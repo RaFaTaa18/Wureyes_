@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useState,
   type ChangeEvent,
@@ -48,22 +49,7 @@ export default function AdminPortfolio() {
 
   const token = sessionStorage.getItem("wureyes_token");
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  async function loadData() {
-    setLoading(true);
-
-    await Promise.all([
-      fetchPortfolio(),
-      fetchCategories(),
-    ]);
-
-    setLoading(false);
-  }
-
-  async function fetchPortfolio() {
+  const fetchPortfolio = useCallback(async () => {
     try {
       const response = await fetch(
         `${API_URL}/api/portfolio`
@@ -88,9 +74,9 @@ export default function AdminPortfolio() {
           : "Gagal mengambil portfolio"
       );
     }
-  }
+  }, []);
 
-  async function fetchCategories() {
+  const fetchCategories = useCallback(async () => {
     try {
       const response = await fetch(
         `${API_URL}/api/categories`
@@ -115,7 +101,22 @@ export default function AdminPortfolio() {
           : "Gagal mengambil kategori"
       );
     }
-  }
+  }, []);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+
+    await Promise.all([
+      fetchPortfolio(),
+      fetchCategories(),
+    ]);
+
+    setLoading(false);
+  }, [fetchPortfolio, fetchCategories]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   function resetForm() {
     setEditingId(null);
