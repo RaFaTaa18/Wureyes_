@@ -91,7 +91,7 @@ export default function AdminServices() {
   }, []);
 
   useEffect(() => {
-    void loadServices();
+    void Promise.resolve().then(() => loadServices());
   }, [loadServices]);
 
   function handleChange(
