@@ -18,6 +18,8 @@ interface PaymentSummary {
   invoice_total: number;
   total_paid: number;
   remaining_amount: number;
+  additional_fee_amount: number;
+  additional_fee_description: string;
   transactions: PaymentTransaction[];
 }
 
@@ -86,6 +88,8 @@ export default function AdminPaymentTransactions({ bookingId, onSaved }: Props) 
     }
     const next = result.data as PaymentSummary;
     setSummary(next);
+    setAdditionalFee(String(next.additional_fee_amount ?? 0));
+    setAdditionalFeeDescription(next.additional_fee_description ?? "");
     if (next.transactions.length > 0) {
       setTransactionType(next.remaining_amount <= 0 ? "final" : "installment");
     } else {
@@ -181,8 +185,16 @@ export default function AdminPaymentTransactions({ bookingId, onSaved }: Props) 
 
   if (loading) return <section className="payment-transactions"><p className="payment-transactions-muted">Memuat riwayat pembayaran...</p></section>;
 
-  const remaining = summary?.remaining_amount ?? 0;
-  const hasPayments = (summary?.transactions.length ?? 0) > 0;
+  if (!summary) {
+    return (
+      <section className="payment-transactions">
+        <p className="payment-transaction-error" role="alert">{error || "Riwayat pembayaran belum dapat dimuat."}</p>
+      </section>
+    );
+  }
+
+  const remaining = summary.remaining_amount;
+  const hasPayments = summary.transactions.length > 0;
 
   return (
     <section className="payment-transactions">
@@ -195,11 +207,11 @@ export default function AdminPaymentTransactions({ bookingId, onSaved }: Props) 
       <div className="payment-transactions-history">
         <div className="payment-transactions-heading">
           <h4>Riwayat pembayaran</h4>
-          <span>{summary?.transactions.length ?? 0} transaksi</span>
+          <span>{summary.transactions.length} transaksi</span>
         </div>
         {hasPayments ? (
           <ol>
-            {summary!.transactions.map((item) => (
+            {summary.transactions.map((item) => (
               <li key={item.id}>
                 <div>
                   <strong>{transactionLabels[item.transaction_type] || item.transaction_type}</strong>
