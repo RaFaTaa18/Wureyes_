@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import "./AdminWorkflow.css";
 
 interface WorkflowBooking {
@@ -43,6 +43,8 @@ export default function AdminWorkflow() {
   const [internalNote, setInternalNote] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [trackingUrl, setTrackingUrl] = useState("");
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const [selectedDate, setSelectedDate] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -89,7 +91,7 @@ export default function AdminWorkflow() {
     setTrackingUrl("");
   }
 
-  async function saveProgress(event: React.FormEvent<HTMLFormElement>) {
+  async function saveProgress(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selected) return;
     setSaving(true);
@@ -136,7 +138,13 @@ export default function AdminWorkflow() {
   }
 
   const upcoming = items.filter((item) => item.status !== "cancelled" && item.status !== "completed").sort((a, b) => String(a.event_date).slice(0, 10).localeCompare(String(b.event_date).slice(0, 10)));
-  const today = new Date().toISOString().slice(0, 10);
+  const monthLabel = new Intl.DateTimeFormat("id-ID", { month: "long", year: "numeric" }).format(calendarMonth);
+  const firstWeekday = (new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0).getDate();
+  const calendarCells = [...Array(firstWeekday).fill(null), ...Array.from({ length: daysInMonth }, (_, index) => index + 1)];
+  const dateKey = (day: number) => [calendarMonth.getFullYear(), String(calendarMonth.getMonth() + 1).padStart(2, "0"), String(day).padStart(2, "0")].join("-");
+  const bookingsForDate = (day: number) => items.filter((item) => String(item.event_date).slice(0, 10) === dateKey(day) && item.status !== "cancelled");
+  const visibleUpcoming = selectedDate ? upcoming.filter((item) => String(item.event_date).slice(0, 10) === selectedDate) : upcoming;
 
   return (
     <section className="workflow-admin">
@@ -150,10 +158,15 @@ export default function AdminWorkflow() {
         <article><small>NEED ATTENTION</small><strong>{items.filter((item) => item.status === "pending").length}</strong><span>Menunggu konfirmasi</span></article>
         <article><small>TRACKING LINKS</small><strong>{items.filter((item) => Boolean(item.tracking_active)).length}</strong><span>Link klien aktif</span></article>
       </div>
+      <section className="workflow-calendar">
+        <div className="workflow-calendar-heading"><div><p>STUDIO CALENDAR</p><h3>{monthLabel}</h3></div><div><button type="button" onClick={() => { setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1)); setSelectedDate(""); }} aria-label="Bulan sebelumnya">‹</button><button type="button" onClick={() => { setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1)); setSelectedDate(""); }} aria-label="Bulan berikutnya">›</button><button type="button" onClick={() => { setCalendarMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1)); setSelectedDate(""); }}>Hari ini</button></div></div>
+        <div className="workflow-calendar-grid">{["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map((day) => <span className="workflow-calendar-weekday" key={day}>{day}</span>)}{calendarCells.map((day, index) => day === null ? <span className="workflow-calendar-blank" key={"blank-" + index} /> : <button type="button" key={day} className={(selectedDate === dateKey(day) ? "is-selected " : "") + (dateKey(day) === new Date().toISOString().slice(0, 10) ? "is-today" : "")} onClick={() => setSelectedDate(selectedDate === dateKey(day) ? "" : dateKey(day))}><span>{day}</span>{bookingsForDate(day).length > 0 && <i>{bookingsForDate(day).length}</i>}</button>)}</div>
+        <p className="workflow-calendar-hint">{selectedDate ? "Menampilkan booking " + formatDate(selectedDate) + " · pilih tanggal lagi untuk melihat semua jadwal." : "Pilih tanggal bertanda angka untuk memfilter jadwal booking."}</p>
+      </section>
       <div className="workflow-layout">
         <section className="workflow-list-panel">
-          <div className="workflow-panel-title"><div><p>BOOKING SCHEDULE</p><h3>Jadwal & proyek</h3></div><span>{items.length} total</span></div>
-          {loading ? <p className="workflow-empty">Memuat booking...</p> : upcoming.length === 0 ? <p className="workflow-empty">Belum ada booking aktif.</p> : <div className="workflow-booking-list">{upcoming.map((item) => <button type="button" key={item.id} className={selectedId === item.id ? "is-selected" : ""} onClick={() => choose(item)}><span className="workflow-date">{formatDate(String(item.event_date))}</span><strong>{item.client_name}</strong><span>{item.service_name}</span><small><i className={item.status === "pending" ? "is-pending" : "is-confirmed"} />{item.status} · {stages.find(([key]) => key === item.current_stage)?.[1] || "Belum ada progres"}</small></button>)}</div>}
+          <div className="workflow-panel-title"><div><p>BOOKING SCHEDULE</p><h3>Jadwal & proyek</h3></div><span>{visibleUpcoming.length} booking</span></div>
+          {loading ? <p className="workflow-empty">Memuat booking...</p> : visibleUpcoming.length === 0 ? <p className="workflow-empty">Tidak ada booking pada tanggal ini.</p> : <div className="workflow-booking-list">{visibleUpcoming.map((item) => <button type="button" key={item.id} className={selectedId === item.id ? "is-selected" : ""} onClick={() => choose(item)}><span className="workflow-date">{formatDate(String(item.event_date))}</span><strong>{item.client_name}</strong><span>{item.service_name}</span><small><i className={item.status === "pending" ? "is-pending" : "is-confirmed"} />{item.status} · {stages.find(([key]) => key === item.current_stage)?.[1] || "Belum ada progres"}</small></button>)}</div>}
           {items.filter((item) => item.status === "completed" || item.status === "cancelled").length > 0 && <details className="workflow-archived"><summary>Booking selesai / dibatalkan ({items.filter((item) => item.status === "completed" || item.status === "cancelled").length})</summary>{items.filter((item) => item.status === "completed" || item.status === "cancelled").map((item) => <button type="button" key={item.id} onClick={() => choose(item)}><strong>{item.client_name}</strong><span>{item.service_name} · {item.status}</span></button>)}</details>}
         </section>
         <section className="workflow-editor">
