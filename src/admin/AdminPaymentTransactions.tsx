@@ -100,7 +100,11 @@ export default function AdminPaymentTransactions({ bookingId, onSaved }: Props) 
 
   useEffect(() => {
     let active = true;
-    loadTransactions()
+    Promise.resolve()
+      .then(() => {
+        if (!active) return undefined;
+        return loadTransactions();
+      })
       .catch((reason) => {
         if (active) setError(reason instanceof Error ? reason.message : "Gagal memuat pembayaran.");
       })
