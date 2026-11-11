@@ -1707,12 +1707,15 @@ const serviceAmount = Number(
   booking.service_price ?? 0
 );
 
+const invoiceTotal = serviceAmount + Number(additionalFees[booking.id] ?? booking.additional_fee_amount ?? 0);
 const amount =
   enteredAmount > 0
     ? enteredAmount
-    : savedAmount > 0
+    : savedAmount > 0 && booking.payment_status === newStatus
       ? savedAmount
-      : serviceAmount;
+      : newStatus === "dp"
+        ? Math.round(invoiceTotal * 0.5)
+        : invoiceTotal;
 
     const paymentDate =
       paymentDates[booking.id] ||
@@ -1737,7 +1740,7 @@ const amount =
 
     updatePayment(
       booking.id,
-      "paid",
+      newStatus,
       booking.service_price,
       paymentDate,
       amount
