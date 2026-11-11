@@ -67,3 +67,14 @@ SELECT
 FROM bookings b
 WHERE b.payment_amount IS NOT NULL
   AND b.payment_amount > 0;
+
+-- Also correct the generated legacy row if this migration had previously
+-- been run with an earlier version of this backfill. This targets only the
+-- migration-owned legacy row for booking #3; it does not alter bookings.
+UPDATE booking_payment_transactions
+SET
+  amount = 320000.00,
+  notes = 'Imported as Rp320,000: confirmed fully paid group booking for 4 people at Rp80,000 per person. Legacy payment_amount stores the per-person rate; additional_fee_amount stores the remaining group value.'
+WHERE legacy_booking_id = 3
+  AND booking_id = 3
+  AND transaction_type = 'legacy';
