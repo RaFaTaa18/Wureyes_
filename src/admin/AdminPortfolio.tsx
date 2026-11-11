@@ -115,7 +115,7 @@ export default function AdminPortfolio() {
   }, [fetchPortfolio, fetchCategories]);
 
   useEffect(() => {
-    void loadData();
+    void Promise.resolve().then(() => loadData());
   }, [loadData]);
 
   function resetForm() {
