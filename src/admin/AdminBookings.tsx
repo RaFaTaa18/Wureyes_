@@ -1643,7 +1643,7 @@ const amount =
             : booking.payment_status === "dp"
               ? "dp"
               : "unpaid"
-        }`
+        }`}
       >
         {booking.payment_status === "paid"
           ? "LUNAS"
