@@ -1702,10 +1702,6 @@ const amount =
   paymentAmounts[booking.id] ?? 0
 );
 
-const savedAmount = Number(
-  booking.payment_amount ?? 0
-);
-
 const serviceAmount = Number(
   booking.service_price ?? 0
 );
