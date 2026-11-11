@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import "./AdminWorkflow.css";
 
 interface WorkflowBooking {
@@ -51,7 +51,7 @@ export default function AdminWorkflow() {
   const token = sessionStorage.getItem("wureyes_token") || "";
   const selected = items.find((item) => item.id === selectedId) || null;
 
-  async function request(path: string, options: RequestInit = {}) {
+  const request = useCallback(async (path: string, options: RequestInit = {}) => {
     const response = await fetch(API_URL + path, {
       ...options,
       headers: { Authorization: "Bearer " + token, ...(options.headers || {}) },
@@ -65,9 +65,9 @@ export default function AdminWorkflow() {
     }
     if (!response.ok || !result.success) throw new Error(result.message || "Permintaan gagal.");
     return result;
-  }
+  }, [token]);
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       setError("");
       const result = await request("/api/tracking/admin/bookings");
@@ -78,11 +78,11 @@ export default function AdminWorkflow() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [request, selectedId]);
 
   useEffect(() => {
-    void Promise.resolve().then(() => load());
-  }, []);
+    void load();
+  }, [load]);
 
   function choose(item: WorkflowBooking) {
     setSelectedId(item.id);
