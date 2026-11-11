@@ -398,6 +398,222 @@ router.patch(
 );
 
 // =====================================================
+// PAYMENT TRANSACTION HISTORY - ADMIN ONLY
+// =====================================================
+
+router.get(
+  "/:id/payment-transactions",
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    const { id } = req.params;
+    if (!/^\\d+$/.test(String(id)) || Number(id) <= 0) {
+      return res.status(400).json({ success: false, message: "ID booking tidak valid." });
+    }
+
+    try {
+      const [bookings] = await pool.query(
+        `
+        SELECT b.id, b.additional_fee_amount, s.price AS service_price
+        FROM bookings b
+        INNER JOIN services s ON s.id = b.service_id
+        WHERE b.id = ?
+        LIMIT 1
+        `,
+        [id]
+      );
+      if (!bookings.length) {
+        return res.status(404).json({ success: false, message: "Booking tidak ditemukan." });
+      }
+
+      const [transactions] = await pool.query(
+        `
+        SELECT
+          t.id,
+          t.transaction_type,
+          t.amount,
+          DATE_FORMAT(t.payment_date, '%Y-%m-%d') AS payment_date,
+          t.notes,
+          t.created_at,
+          u.name AS created_by_name
+        FROM booking_payment_transactions t
+        LEFT JOIN users u ON u.id = t.created_by
+        WHERE t.booking_id = ?
+        ORDER BY t.payment_date ASC, t.id ASC
+        `,
+        [id]
+      );
+      const totalPaid = transactions.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+      const invoiceTotal = Number(bookings[0].service_price || 0) + Number(bookings[0].additional_fee_amount || 0);
+
+      return res.json({
+        success: true,
+        data: {
+          booking_id: Number(id),
+          invoice_total: invoiceTotal,
+          total_paid: Number(totalPaid.toFixed(2)),
+          remaining_amount: Math.max(0, Number((invoiceTotal - totalPaid).toFixed(2))),
+          transactions: transactions.map((item) => ({
+            ...item,
+            amount: Number(item.amount),
+          })),
+        },
+      });
+    } catch (error) {
+      console.error("Get payment transactions error:", error);
+      return res.status(500).json({ success: false, message: "Gagal memuat riwayat pembayaran." });
+    }
+  }
+);
+
+router.post(
+  "/:id/payment-transactions",
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    const { id } = req.params;
+    const {
+      transaction_type,
+      amount: rawAmount,
+      payment_date,
+      notes = "",
+      additional_fee_amount,
+      additional_fee_description,
+    } = req.body ?? {};
+
+    if (!/^\\d+$/.test(String(id)) || Number(id) <= 0) {
+      return res.status(400).json({ success: false, message: "ID booking tidak valid." });
+    }
+    if (!["dp", "installment", "final"].includes(transaction_type)) {
+      return res.status(400).json({ success: false, message: "Jenis transaksi tidak valid." });
+    }
+
+    const amount = Number(rawAmount);
+    if (!Number.isFinite(amount) || amount <= 0 || Math.abs(amount * 100 - Math.round(amount * 100)) > 0.0001) {
+      return res.status(400).json({ success: false, message: "Nominal pembayaran harus lebih besar dari Rp0 dan maksimal 2 angka desimal." });
+    }
+    if (!isValidCalendarDate(payment_date)) {
+      return res.status(400).json({ success: false, message: "Tanggal pembayaran tidak valid. Gunakan format YYYY-MM-DD." });
+    }
+    if (typeof notes !== "string" || notes.trim().length > 500) {
+      return res.status(400).json({ success: false, message: "Catatan transaksi maksimal 500 karakter." });
+    }
+
+    let connection;
+    try {
+      connection = await pool.getConnection();
+      await connection.beginTransaction();
+
+      const [bookings] = await connection.query(
+        `
+        SELECT b.id, b.additional_fee_amount, b.additional_fee_description,
+          s.price AS service_price
+        FROM bookings b
+        INNER JOIN services s ON s.id = b.service_id
+        WHERE b.id = ?
+        LIMIT 1
+        FOR UPDATE
+        `,
+        [id]
+      );
+      if (!bookings.length) {
+        await connection.rollback();
+        return res.status(404).json({ success: false, message: "Booking tidak ditemukan." });
+      }
+
+      const booking = bookings[0];
+      const additionalFee = additional_fee_amount === undefined
+        ? Number(booking.additional_fee_amount || 0)
+        : Number(additional_fee_amount);
+      const feeDescription = additional_fee_description === undefined
+        ? (booking.additional_fee_description || null)
+        : String(additional_fee_description ?? "").trim() || null;
+
+      if (!Number.isFinite(additionalFee) || additionalFee < 0 || Math.abs(additionalFee * 100 - Math.round(additionalFee * 100)) > 0.0001) {
+        await connection.rollback();
+        return res.status(400).json({ success: false, message: "Biaya tambahan tidak valid." });
+      }
+      if (feeDescription && feeDescription.length > 255) {
+        await connection.rollback();
+        return res.status(400).json({ success: false, message: "Keterangan biaya tambahan maksimal 255 karakter." });
+      }
+
+      const invoiceTotal = Number(booking.service_price || 0) + additionalFee;
+      const [sumRows] = await connection.query(
+        "SELECT COALESCE(SUM(amount), 0) AS total_paid FROM booking_payment_transactions WHERE booking_id = ?",
+        [id]
+      );
+      const totalBefore = Number(sumRows[0].total_paid || 0);
+      const remainingBefore = Number((invoiceTotal - totalBefore).toFixed(2));
+      const totalAfter = Number((totalBefore + amount).toFixed(2));
+
+      if (remainingBefore <= 0 || amount > remainingBefore + 0.009) {
+        await connection.rollback();
+        return res.status(400).json({ success: false, message: "Nominal pembayaran melebihi sisa tagihan." });
+      }
+      if (transaction_type === "dp" && (totalBefore > 0 || amount >= invoiceTotal)) {
+        await connection.rollback();
+        return res.status(400).json({ success: false, message: "DP hanya dapat dicatat sebagai pembayaran pertama dan harus lebih kecil dari total tagihan." });
+      }
+      if (transaction_type === "installment" && (totalBefore <= 0 || amount >= remainingBefore - 0.009)) {
+        await connection.rollback();
+        return res.status(400).json({ success: false, message: "Cicilan tambahan harus menyisakan tagihan. Gunakan Pelunasan untuk pembayaran terakhir." });
+      }
+      if (transaction_type === "final" && Math.abs(amount - remainingBefore) > 0.009) {
+        await connection.rollback();
+        return res.status(400).json({ success: false, message: "Nominal pelunasan harus sama dengan sisa tagihan." });
+      }
+
+      await connection.query(
+        `
+        INSERT INTO booking_payment_transactions
+          (booking_id, transaction_type, amount, payment_date, notes, created_by)
+        VALUES (?, ?, ?, ?, ?, ?)
+        `,
+        [id, transaction_type, amount, `${payment_date} 12:00:00`, notes.trim() || null, req.user.id || null]
+      );
+
+      const paymentStatus = totalAfter >= invoiceTotal - 0.009 ? "paid" : "dp";
+      await connection.query(
+        `
+        UPDATE bookings
+        SET payment_status = ?,
+          payment_amount = ?,
+          payment_date = ?,
+          additional_fee_amount = ?,
+          additional_fee_description = ?
+        WHERE id = ?
+        `,
+        [paymentStatus, totalAfter, `${payment_date} 12:00:00`, additionalFee, feeDescription, id]
+      );
+
+      await connection.commit();
+
+      return res.status(201).json({
+        success: true,
+        message: "Transaksi pembayaran berhasil dicatat.",
+        data: {
+          booking_id: Number(id),
+          payment_status: paymentStatus,
+          invoice_total: invoiceTotal,
+          total_paid: totalAfter,
+          remaining_amount: Math.max(0, Number((invoiceTotal - totalAfter).toFixed(2))),
+          payment_date,
+          additional_fee_amount: additionalFee,
+          additional_fee_description: feeDescription || "",
+        },
+      });
+    } catch (error) {
+      if (connection) await connection.rollback();
+      console.error("Create payment transaction error:", error);
+      return res.status(500).json({ success: false, message: "Gagal menyimpan transaksi pembayaran." });
+    } finally {
+      if (connection) connection.release();
+    }
+  }
+);
+
+// =====================================================
  // UPDATE BOOKING PAYMENT - ADMIN ONLY
  // =====================================================
 
