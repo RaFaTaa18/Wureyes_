@@ -1636,7 +1636,7 @@ const amount =
       </div>
 
       <span
-        `payment-status ${
+        className={`payment-status ${
           booking.payment_status === "paid"
             ? "paid"
             : booking.payment_status === "dp"
