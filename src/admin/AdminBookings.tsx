@@ -23,7 +23,7 @@
     service_name: string;
     service_price: number | null;
 
-    payment_status: "unpaid" | "paid";
+    payment_status: "unpaid" | "dp" | "paid";
     payment_date?: string | null;
     payment_amount?: number | null;
     
@@ -561,7 +561,7 @@ setReceiptBooking((current) => {
 
   async function updatePayment(
     bookingId: number,
-    paymentStatus: "unpaid" | "paid",
+    paymentStatus: "unpaid" | "dp" | "paid",
     servicePrice: number | null,
     paymentDateOverride?: string,
     paymentAmountOverride?: number
@@ -584,7 +584,7 @@ setReceiptBooking((current) => {
 );
 
 const amount =
-  paymentStatus === "paid"
+  paymentStatus !== "unpaid"
     ? (
         paymentAmountOverride != null &&
         paymentAmountOverride > 0
@@ -597,7 +597,7 @@ const amount =
 
 
   const paymentDate =
-    paymentStatus === "paid"
+    paymentStatus !== "unpaid"
       ? paymentDateOverride ??
         paymentDates[bookingId] ??
         new Date().toISOString().slice(0, 10)
@@ -605,7 +605,7 @@ const amount =
 
       
   if (
-    paymentStatus === "paid" &&
+    paymentStatus !== "unpaid" &&
     (
       amount === null ||
       !Number.isFinite(amount) ||
@@ -1644,7 +1644,9 @@ const amount =
       >
         {booking.payment_status === "paid"
           ? "LUNAS"
-          : "BELUM LUNAS"}
+          : booking.payment_status === "dp"
+            ? "DP TERBAYAR"
+            : "BELUM BAYAR"}
       </span>
 
     </div>
@@ -1689,9 +1691,10 @@ const amount =
             const newStatus =
               event.target.value as
                 | "unpaid"
+                | "dp"
                 | "paid";
 
-            if (newStatus === "paid") {
+            if (newStatus !== "unpaid") {
     const enteredAmount = Number(
   paymentAmounts[booking.id] ?? 0
 );
@@ -1757,6 +1760,10 @@ const amount =
             Belum Lunas
           </option>
 
+          <option value="dp">
+            DP Terbayar
+          </option>
+
           <option value="paid">
             Lunas
           </option>
@@ -1765,7 +1772,7 @@ const amount =
 
     </div>
 
-    {booking.payment_status === "paid" && (
+    {(booking.payment_status === "paid" || booking.payment_status === "dp") && (
 
       <div className="payment-edit">
 
