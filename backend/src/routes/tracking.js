@@ -46,7 +46,7 @@ router.get("/admin/bookings", authenticateToken, requireAdmin, async (_req, res)
   try {
     const [rows] = await pool.query(`
       SELECT b.id, b.client_name, b.event_date, b.status, b.payment_status,
-        b.payment_amount, b.service_price, b.additional_fee_amount,
+        b.payment_amount, s.price AS service_price, b.additional_fee_amount,
         s.name AS service_name, p.current_stage, p.client_note,
         p.internal_note, p.estimated_delivery_date, p.updated_at,
         (t.id IS NOT NULL AND t.revoked_at IS NULL) AS tracking_active
