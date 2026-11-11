@@ -1712,13 +1712,11 @@ const serviceAmount = Number(
 
 const invoiceTotal = serviceAmount + Number(additionalFees[booking.id] ?? booking.additional_fee_amount ?? 0);
 const amount =
-  enteredAmount > 0
+  booking.payment_status === newStatus && enteredAmount > 0
     ? enteredAmount
-    : savedAmount > 0 && booking.payment_status === newStatus
-      ? savedAmount
-      : newStatus === "dp"
-        ? Math.round(invoiceTotal * 0.5)
-        : invoiceTotal;
+    : newStatus === "dp"
+      ? Math.round(invoiceTotal * 0.5)
+      : invoiceTotal;
 
     const paymentDate =
       paymentDates[booking.id] ||
