@@ -6,6 +6,7 @@ import {
   calculatePaymentSummary,
   validatePaymentTransaction,
 } from "../src/utils/paymentRules.js";
+import { resolveServicePriceSnapshot } from "../src/utils/bookingPriceSnapshot.js";
 
 test("invoice total includes service price and genuine additional fees", () => {
   assert.equal(calculateInvoiceTotal(550000, 50000), 600000);
@@ -102,15 +103,59 @@ test("migration backfills only positive historical payments and does not fabrica
   assert.match(sql, /WHERE b\.payment_amount IS NOT NULL\s+AND b\.payment_amount > 0/);
 });
 
-test("price snapshot migration backfills existing bookings without deleting booking data", async () => {
+test("migration 003 adds a nullable snapshot column without finalizing it", async () => {
   const sql = await readFile(
     new URL("../database/migrations/003_booking_service_price_snapshot.sql", import.meta.url),
     "utf8"
   );
   assert.match(sql, /ADD COLUMN service_price_snapshot DECIMAL\(12,2\) NULL/);
-  assert.match(sql, /UPDATE bookings b\s+INNER JOIN services s ON s\.id = b\.service_id\s+SET b\.service_price_snapshot = s\.price/);
+  assert.doesNotMatch(sql, /UPDATE\s+bookings/i);
+  assert.doesNotMatch(sql, /MODIFY COLUMN service_price_snapshot DECIMAL\(12,2\) NOT NULL/i);
+  assert.doesNotMatch(sql, /DELETE\s+FROM\s+bookings/i);
+});
+
+test("migration 004 backfills missing snapshots and enforces NOT NULL", async () => {
+  const sql = await readFile(
+    new URL("../database/migrations/004_finalize_booking_service_price_snapshot.sql", import.meta.url),
+    "utf8"
+  );
+  assert.match(sql, /UPDATE bookings b\s+INNER JOIN services s ON s\.id = b\.service_id\s+SET b\.service_price_snapshot = s\.price\s+WHERE b\.service_price_snapshot IS NULL/);
   assert.match(sql, /MODIFY COLUMN service_price_snapshot DECIMAL\(12,2\) NOT NULL/);
   assert.doesNotMatch(sql, /DELETE\s+FROM\s+bookings/i);
+});
+
+test("service price snapshot changes only when the selected service changes", () => {
+  assert.equal(resolveServicePriceSnapshot({
+    existingServiceId: 7,
+    newServiceId: "7",
+    existingSnapshot: "350000.00",
+    newServicePrice: "550000.00",
+  }), "350000.00");
+
+  assert.equal(resolveServicePriceSnapshot({
+    existingServiceId: 7,
+    newServiceId: 8,
+    existingSnapshot: "350000.00",
+    newServicePrice: "550000.00",
+  }), "550000.00");
+});
+
+test("service price snapshot remains null before the final backfill when the service is unchanged", () => {
+  assert.equal(resolveServicePriceSnapshot({
+    existingServiceId: 7,
+    newServiceId: 7,
+    existingSnapshot: null,
+    newServicePrice: "350000.00",
+  }), null);
+});
+
+test("booking update persists the resolved snapshot and protects existing payments", async () => {
+  const bookings = await readFile(new URL("../src/routes/bookings.js", import.meta.url), "utf8");
+  assert.match(bookings, /SELECT id, service_id, service_price_snapshot, additional_fee_amount\s+FROM bookings/);
+  assert.match(bookings, /resolveServicePriceSnapshot\(/);
+  assert.match(bookings, /service_price_snapshot = \?/);
+  assert.match(bookings, /FROM booking_payment_transactions\s+WHERE booking_id = \?/);
+  assert.match(bookings, /newInvoiceTotal \+ 0\.009 < totalPaid/);
 });
 
 test("booking creation captures the current service price and all invoice readers prefer the snapshot", async () => {
