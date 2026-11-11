@@ -440,7 +440,7 @@ router.get(
   requireAdmin,
   async (req, res) => {
     const { id } = req.params;
-    if (!/^\\d+$/.test(String(id)) || Number(id) <= 0) {
+    if (!/^\d+$/.test(String(id)) || Number(id) <= 0) {
       return res.status(400).json({ success: false, message: "ID booking tidak valid." });
     }
 
@@ -516,7 +516,7 @@ router.post(
       additional_fee_description,
     } = req.body ?? {};
 
-    if (!/^\\d+$/.test(String(id)) || Number(id) <= 0) {
+    if (!/^\d+$/.test(String(id)) || Number(id) <= 0) {
       return res.status(400).json({ success: false, message: "ID booking tidak valid." });
     }
     if (!["dp", "installment", "final"].includes(transaction_type)) {
