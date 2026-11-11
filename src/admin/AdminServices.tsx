@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useState,
   type FormEvent,
@@ -32,6 +33,8 @@ interface ServiceForm {
   detailNotes: string;
 }
 
+const API_URL = import.meta.env.VITE_API_URL || "";
+
 const emptyForm: ServiceForm = {
   name: "",
   slug: "",
@@ -56,11 +59,9 @@ export default function AdminServices() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const API_URL = import.meta.env.VITE_API_URL || "";
-
   const token = sessionStorage.getItem("wureyes_token");
 
-  async function loadServices() {
+  const loadServices = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -87,11 +88,11 @@ export default function AdminServices() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
-    void Promise.resolve().then(() => loadServices());
-  }, []);
+    void loadServices();
+  }, [loadServices]);
 
   function handleChange(
     field: keyof ServiceForm,
