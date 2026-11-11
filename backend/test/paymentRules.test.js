@@ -156,6 +156,9 @@ test("booking update persists the resolved snapshot and protects existing paymen
   assert.match(bookings, /service_price_snapshot = \?/);
   assert.match(bookings, /FROM booking_payment_transactions\s+WHERE booking_id = \?/);
   assert.match(bookings, /newInvoiceTotal \+ 0\.009 < totalPaid/);
+  assert.match(bookings, /LIMIT 1\s+FOR UPDATE/);
+  assert.match(bookings, /LIMIT 1\s+FOR SHARE/);
+  assert.match(bookings, /await connection\.commit\(\)/);
 });
 
 test("booking creation captures the current service price and all invoice readers prefer the snapshot", async () => {
