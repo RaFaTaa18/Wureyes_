@@ -17,6 +17,7 @@ import Contact from "./sections/Contact";
 import AdminLogin from "./admin/AdminLogin";
 import AdminDashboard from "./admin/AdminDashboard";
 import PhotoSelection from "./client/PhotoSelection";
+import BookingTracking from "./client/BookingTracking";
 import Terms from "./client/Terms";
 import Footer from "./components/Footer";
 
@@ -101,6 +102,11 @@ function App() {
         <Route
           path="/select/:token"
           element={<PhotoSelection />}
+        />
+
+        <Route
+          path="/track/:token"
+          element={<BookingTracking />}
         />
       </Routes>
     </BrowserRouter>
