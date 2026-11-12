@@ -1,6 +1,8 @@
-﻿  import { useEffect, useMemo, useState } from "react";
+﻿  import { useCallback, useEffect, useMemo, useState } from "react";
   import { createPortal } from "react-dom";
   import "./AdminBookings.css";
+  import "./AdminPaymentStatus.css";
+  import AdminPaymentTransactions from "./AdminPaymentTransactions";
 
   interface Booking {
     id: number;
@@ -23,7 +25,7 @@
     service_name: string;
     service_price: number | null;
 
-    payment_status: "unpaid" | "paid";
+    payment_status: "unpaid" | "dp" | "paid";
     payment_date?: string | null;
     payment_amount?: number | null;
     
@@ -85,20 +87,6 @@
   export default function AdminBookings() {
     const [bookings, setBookings] = useState<Booking[]>([]);
 
-    const [paymentAmounts, setPaymentAmounts] =
-      useState<Record<number, string>>({});
-
-    const [paymentDates, setPaymentDates] =
-    useState<Record<number, string>>({});
-
-    const [additionalFees, setAdditionalFees] =
-    useState<Record<number, string>>({});
-
-  const [additionalFeeDescriptions, setAdditionalFeeDescriptions] =
-    useState<Record<number, string>>({});
-
-    const [savingPayment, setSavingPayment] =
-      useState<number | null>(null);
     
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -153,7 +141,7 @@
       "wureyes_token"
     );
 
-    async function loadBookings() {
+    const loadBookings = useCallback(async () => {
       if (!token) {
         setError(
           "Session expired. Please login again."
@@ -187,8 +175,7 @@
             "wureyes_user"
           );
 
-          window.location.href =
-            "/admin/login";
+          window.location.assign("/admin/login");
 
           return;
         }
@@ -217,52 +204,13 @@ setReceiptBooking((current) => {
 
         const urls: Record<number, string> = {};
   const editedUrls: Record<number, string> = {};
-  const dates: Record<number, string> = {};
-  const amounts: Record<number, string> = {};
-  const feeAmounts: Record<number, string> = {};
-  const feeDescriptions: Record<number, string> = {};
-
-  result.data.forEach(
-    (booking: Booking) => {
-      if (booking.payment_date) {
-        dates[booking.id] =
-          booking.payment_date.substring(0, 10);
-      }
-
-      if (
-        booking.payment_amount !== null &&
-        booking.payment_amount !== undefined
-      ) {
-        amounts[booking.id] =
-          String(booking.payment_amount);
-      }
-
-      urls[booking.id] =
-        booking.drive_folder_url || "";
-
-      editedUrls[booking.id] =
-        booking.edited_drive_folder_url || "";
-
-      amounts[booking.id] =
-    booking.payment_amount != null
-      ? String(booking.payment_amount)
-      : "";
-
-      feeAmounts[booking.id] = String(
-    booking.additional_fee_amount ?? 0
-  );
-
-  feeDescriptions[booking.id] =
-    booking.additional_fee_description ?? "";
-    }
-  );
+  result.data.forEach((booking: Booking) => {
+    urls[booking.id] = booking.drive_folder_url || "";
+    editedUrls[booking.id] = booking.edited_drive_folder_url || "";
+  });
 
   setDriveUrls(urls);
   setEditedDriveUrls(editedUrls);
-  setPaymentDates(dates);
-  setPaymentAmounts(amounts);
-  setAdditionalFees(feeAmounts);
-  setAdditionalFeeDescriptions(feeDescriptions);
 
       } catch (error) {
         setError(
@@ -273,9 +221,9 @@ setReceiptBooking((current) => {
       } finally {
         setLoading(false);
       }
-    }
+    }, [token]);
 
-    async function loadServices() {
+    const loadServices = useCallback(async () => {
     try {
       const response = await fetch(
         `${API_URL}/api/services`
@@ -292,12 +240,22 @@ setReceiptBooking((current) => {
         error
       );
     }
-  }
+  }, []);
 
     useEffect(() => {
-    loadBookings();
-    loadServices();
-  }, []);
+      let active = true;
+
+      Promise.resolve().then(() => {
+        if (!active) return;
+
+        void loadBookings();
+        void loadServices();
+      });
+
+      return () => {
+        active = false;
+      };
+    }, [loadBookings, loadServices]);
 
     function openEditBooking(booking: Booking) {
     setReceiptBooking(null);
@@ -375,8 +333,7 @@ setReceiptBooking((current) => {
           "wureyes_user"
         );
 
-        window.location.href =
-          "/admin/login";
+        window.location.assign("/admin/login");
 
         return;
       }
@@ -559,210 +516,6 @@ setReceiptBooking((current) => {
     }
   }
 
-  async function updatePayment(
-    bookingId: number,
-    paymentStatus: "unpaid" | "paid",
-    servicePrice: number | null,
-    paymentDateOverride?: string,
-    paymentAmountOverride?: number
-  ) {
-    if (!token) {
-      setError(
-        "Session expired. Please login again."
-      );
-
-      return;
-    }
-
-    try {
-      setSavingPayment(bookingId);
-      setError("");
-
-      
-  const enteredAmount = Number(
-  paymentAmounts[bookingId] ?? 0
-);
-
-const amount =
-  paymentStatus === "paid"
-    ? (
-        paymentAmountOverride != null &&
-        paymentAmountOverride > 0
-      )
-      ? paymentAmountOverride
-      : enteredAmount > 0
-        ? enteredAmount
-        : Number(servicePrice ?? 0)
-    : null;
-
-
-  const paymentDate =
-    paymentStatus === "paid"
-      ? paymentDateOverride ??
-        paymentDates[bookingId] ??
-        new Date().toISOString().slice(0, 10)
-      : null;
-
-      
-  if (
-    paymentStatus === "paid" &&
-    (
-      amount === null ||
-      !Number.isFinite(amount) ||
-      amount <= 0
-    )
-  ) {
-    setError(
-      "Jumlah pembayaran harus lebih besar dari Rp0."
-    );
-
-    return;
-  }
-
-      const response = await fetch(
-        `${API_URL}/api/bookings/${bookingId}/payment`,
-        {
-          method: "PATCH",
-
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-
-          body: JSON.stringify({
-    payment_status: paymentStatus,
-    payment_amount: amount,
-    payment_date: paymentDate,
-    additional_fee_amount: Number(
-    additionalFees[bookingId] ?? 0
-  ),
-    additional_fee_description:
-      additionalFeeDescriptions[bookingId] ?? "",
-  }),
-        }
-      );
-
-
-      const result =
-        await response.json();
-
-      if (response.status === 401) {
-        sessionStorage.removeItem(
-          "wureyes_token"
-        );
-
-        sessionStorage.removeItem(
-          "wureyes_user"
-        );
-
-        window.location.href =
-          "/admin/login";
-
-        return;
-      }
-
-      if (
-        !response.ok ||
-        !result.success
-      ) {
-        throw new Error(
-          result.message ||
-            "Failed to update payment"
-        );
-      }
-
-      const savedPayment = result.data;
-
-  if (!savedPayment) {
-    throw new Error(
-      "Data pembayaran tidak diterima dari server."
-    );
-  }
-
-
-      setBookings((current) =>
-    current.map((booking) =>
-      booking.id === bookingId
-        ? {
-            ...booking,
-            payment_status: savedPayment.payment_status,
-            payment_amount: savedPayment.payment_amount,
-            payment_date: savedPayment.payment_date,
-            additional_fee_amount:
-              savedPayment.additional_fee_amount,
-            additional_fee_description:
-              savedPayment.additional_fee_description,
-          }
-        : booking
-    )
-  );
-
-
-  setReceiptBooking((current) =>
-    current?.id === bookingId
-      ? {
-          ...current,
-          payment_status:
-            savedPayment.payment_status,
-          payment_amount:
-            savedPayment.payment_amount,
-          payment_date:
-            savedPayment.payment_date,
-          additional_fee_amount:
-            savedPayment.additional_fee_amount,
-          additional_fee_description:
-            savedPayment.additional_fee_description,
-        }
-      : current
-  );
-
-      setPaymentAmounts(
-        (current) => ({
-          ...current,
-          [bookingId]:
-            amount !== null
-              ? String(amount)
-              : "",
-        })
-      );
-
-      setPaymentDates(
-    (current) => ({
-      ...current,
-      [bookingId]:
-        paymentDate || "",
-    })
-  );
-
-  setAdditionalFees((current) => ({
-    ...current,
-    [bookingId]: String(
-      savedPayment.additional_fee_amount ?? 0
-    ),
-  }));
-
-  setAdditionalFeeDescriptions((current) => ({
-    ...current,
-    [bookingId]:
-      savedPayment.additional_fee_description ?? "",
-  }));
-
-    } catch (error) {
-      console.error(
-        "Update payment error:",
-        error
-      );
-
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to update payment"
-      );
-    } finally {
-      setSavingPayment(null);
-    }
-  }
-
     async function saveDriveFolder(
       bookingId: number
     ) {
@@ -816,8 +569,7 @@ const amount =
             "wureyes_user"
           );
 
-          window.location.href =
-            "/admin/login";
+          window.location.assign("/admin/login");
 
           return;
         }
@@ -918,8 +670,7 @@ const amount =
             "wureyes_user"
           );
 
-          window.location.href =
-            "/admin/login";
+          window.location.assign("/admin/login");
 
           return;
         }
@@ -1010,8 +761,7 @@ const amount =
             "wureyes_user"
           );
 
-          window.location.href =
-            "/admin/login";
+          window.location.assign("/admin/login");
 
           return;
         }
@@ -1625,253 +1375,56 @@ const amount =
                     </div>
 
                     {/* PAYMENT */}
-
-  <section className="booking-payment">
-
-    <div className="payment-heading">
-
-      <div>
-        <span>PAYMENT</span>
-        <strong>Payment Information</strong>
-      </div>
-
-      <span
-        className={`payment-status ${
-          booking.payment_status === "paid"
-            ? "paid"
-            : "unpaid"
-        }`}
-      >
-        {booking.payment_status === "paid"
-          ? "LUNAS"
-          : "BELUM LUNAS"}
-      </span>
-
-    </div>
-
-    <div className="payment-info-grid">
-
-      <div className="payment-info-item">
-        <span>SERVICE</span>
-
-        <strong>
-          {booking.service_name}
-        </strong>
-      </div>
-
-      <div className="payment-info-item">
-        <span>HARGA</span>
-
-        <strong>
-          {formatPrice(booking.service_price)}
-        </strong>
-      </div>
-
-      <div className="payment-info-item">
-        <span>JUMLAH DIBAYAR</span>
-
-        <strong>
-          {formatPrice(
-            booking.payment_amount ?? null
-          )}
-        </strong>
-      </div>
-
-      <div className="payment-info-item">
-        <span>STATUS</span>
-
-        <select
-          value={
-            booking.payment_status || "unpaid"
-          }
-          onChange={(event) => {
-
-            const newStatus =
-              event.target.value as
-                | "unpaid"
-                | "paid";
-
-            if (newStatus === "paid") {
-    const enteredAmount = Number(
-  paymentAmounts[booking.id] ?? 0
-);
-
-const savedAmount = Number(
-  booking.payment_amount ?? 0
-);
-
-const serviceAmount = Number(
-  booking.service_price ?? 0
-);
-
-const amount =
-  enteredAmount > 0
-    ? enteredAmount
-    : savedAmount > 0
-      ? savedAmount
-      : serviceAmount;
-
-    const paymentDate =
-      paymentDates[booking.id] ||
-      booking.payment_date?.substring(0, 10) ||
-      new Date().toISOString().slice(0, 10);
-
-    setPaymentAmounts(
-      (current) => ({
-        ...current,
-        [booking.id]:
-          String(amount),
-      })
-    );
-
-    setPaymentDates(
-      (current) => ({
-        ...current,
-        [booking.id]:
-          paymentDate,
-      })
-    );
-
-    updatePayment(
-      booking.id,
-      "paid",
-      booking.service_price,
-      paymentDate,
-      amount
-    );
-
-    return;
-  }
-
-  updatePayment(
-    booking.id,
-    "unpaid",
-    booking.service_price
-  );
-          }}
-          disabled={
-            savingPayment === booking.id
-          }
-        >
-          <option value="unpaid">
-            Belum Lunas
-          </option>
-
-          <option value="paid">
-            Lunas
-          </option>
-        </select>
-      </div>
-
-    </div>
-
-    {booking.payment_status === "paid" && (
-
-      <div className="payment-edit">
-
-        <div>
-          <span>JUMLAH PEMBAYARAN</span>
-
-          <input
-            type="number"
-            min="0"
-            value={
-              paymentAmounts[booking.id] ??
-              booking.payment_amount ??
-              booking.service_price ??
-              ""
-            }
-            onChange={(event) =>
-              setPaymentAmounts(
-                (current) => ({
-                  ...current,
-                  [booking.id]:
-                    event.target.value,
-                })
-              )
-            }
-          />
-        </div>
-
-        <div>
-    <span>BIAYA TAMBAHAN (RP)</span>
-
-    <input
-      type="number"
-      min="0"
-      value={additionalFees[booking.id] ?? "0"}
-  onChange={(event) =>
-    setAdditionalFees((current) => ({
-      ...current,
-      [booking.id]: event.target.value,
-    }))
-  }
-      placeholder="0"
-    />
-  </div>
-
-  <div>
-    <span>KETERANGAN BIAYA TAMBAHAN</span>
-
-    <input
-      type="text"
-      maxLength={255}
-      value={additionalFeeDescriptions[booking.id] ?? ""}
-      onChange={(event) =>
-        setAdditionalFeeDescriptions((current) => ({
-          ...current,
-          [booking.id]: event.target.value,
-        }))
-      }
-      placeholder="Contoh: Biaya transportasi"
-    />
-  </div>
-
-        <div>
-    <span>TANGGAL PEMBAYARAN</span>
-
-    <input
-      type="date"
-      value={
-        paymentDates[booking.id] ??
-        booking.payment_date?.substring(0, 10) ??
-        ""
-      }
-      onChange={(event) =>
-        setPaymentDates(
-          (current) => ({
-            ...current,
-            [booking.id]:
-              event.target.value,
-          })
-        )
-      }
-    />
-  </div>
-
-        <button
-          type="button"
-          onClick={() =>
-            updatePayment(
-              booking.id,
-              "paid",
-              booking.service_price
-            )
-          }
-          disabled={
-            savingPayment === booking.id
-          }
-        >
-          {savingPayment === booking.id
-            ? "Saving..."
-            : "Simpan Pembayaran"}
-        </button>
-
-      </div>
-
-    )}
-
-  </section>
+                    <section className="booking-payment">
+                      <div className="payment-heading">
+                        <div>
+                          <span>PAYMENT</span>
+                          <strong>Payment Information</strong>
+                        </div>
+                        <span className={`payment-status ${booking.payment_status === "paid" ? "paid" : booking.payment_status === "dp" ? "dp" : "unpaid"}`}>
+                          {booking.payment_status === "paid" ? "LUNAS" : booking.payment_status === "dp" ? "DP / CICILAN" : "BELUM BAYAR"}
+                        </span>
+                      </div>
+                      <div className="payment-info-grid">
+                        <div className="payment-info-item">
+                          <span>SERVICE</span>
+                          <strong>{booking.service_name}</strong>
+                        </div>
+                        <div className="payment-info-item">
+                          <span>HARGA LAYANAN</span>
+                          <strong>{formatPrice(booking.service_price)}</strong>
+                        </div>
+                        <div className="payment-info-item">
+                          <span>TOTAL DITERIMA</span>
+                          <strong>{formatPrice(booking.payment_amount ?? null)}</strong>
+                        </div>
+                        <div className="payment-info-item">
+                          <span>TRANSAKSI TERAKHIR</span>
+                          <strong>{booking.payment_date ? formatDate(booking.payment_date) : "Belum ada"}</strong>
+                        </div>
+                      </div>
+                      <AdminPaymentTransactions
+                        bookingId={booking.id}
+                        onSaved={(savedPayment) => {
+                          setBookings((current) => current.map((item) => item.id === booking.id ? {
+                            ...item,
+                            payment_status: savedPayment.payment_status,
+                            payment_amount: savedPayment.total_paid,
+                            payment_date: savedPayment.payment_date,
+                            additional_fee_amount: savedPayment.additional_fee_amount,
+                            additional_fee_description: savedPayment.additional_fee_description,
+                          } : item));
+                          setReceiptBooking((current) => current?.id === booking.id ? {
+                            ...current,
+                            payment_status: savedPayment.payment_status,
+                            payment_amount: savedPayment.total_paid,
+                            payment_date: savedPayment.payment_date,
+                            additional_fee_amount: savedPayment.additional_fee_amount,
+                            additional_fee_description: savedPayment.additional_fee_description,
+                          } : current);
+                        }}
+                      />
+                    </section>
 
                     {/* DETAILS */}
 

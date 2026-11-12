@@ -17,6 +17,7 @@ import categoriesRoutes from "./routes/categories.js";
 import googleDriveRoutes from "./routes/googleDrive.js";
 import photoSelectionRoutes from "./routes/photoSelection.js";
 import dashboardRoutes from "./routes/dashboard.js";
+import trackingRoutes from "./routes/tracking.js";
 
 dotenv.config();
 
@@ -72,6 +73,7 @@ app.use("/api/categories", categoriesRoutes);
 app.use("/api/google-drive", googleDriveRoutes);
 app.use("/api/photo-selection", photoSelectionRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/tracking", trackingRoutes);
 
 app.get("/", (req, res) => {
   res.json({

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import "./Services.css";
 
+const API_URL = import.meta.env.VITE_API_URL || "";
+
 interface Service {
   id: number;
   name: string;
@@ -74,8 +76,6 @@ export default function Services() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const sectionRef = useRef<HTMLElement | null>(null);
-  const API_URL = import.meta.env.VITE_API_URL || "";
-
   useEffect(() => {
     fetch(`${API_URL}/api/services`)
       .then((response) => response.json())
@@ -95,14 +95,11 @@ export default function Services() {
     return pages;
   }, [services]);
   const totalPages = Math.max(1, servicePages.length);
+  const visiblePage = Math.min(currentPage, totalPages);
   const selectedIndex = selectedService
     ? services.findIndex((service) => service.id === selectedService.id)
     : -1;
   const detailPreset = selectedService ? getServiceDetailPreset(selectedService) : null;
-
-  useEffect(() => {
-    setCurrentPage((page) => Math.min(page, totalPages));
-  }, [totalPages]);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -256,7 +253,7 @@ export default function Services() {
         </div>
       ) : (
         <>
-          <div className="t-page-slide services-page-slide" data-page={currentPage}>
+          <div className="t-page-slide services-page-slide" data-page={visiblePage}>
             {servicePages.map((pageServices, index) => {
               const pageNumber = index + 1;
               return (
@@ -264,8 +261,8 @@ export default function Services() {
                   className="t-page services-page"
                   data-page-id={pageNumber}
                   aria-label={`Services page ${pageNumber}`}
-                  aria-hidden={currentPage !== pageNumber}
-                  data-active={currentPage === pageNumber ? "true" : "false"}
+                  aria-hidden={visiblePage !== pageNumber}
+                  data-active={visiblePage === pageNumber ? "true" : "false"}
                   key={pageNumber}
                 >
                   <div className="services-grid">
@@ -304,13 +301,13 @@ export default function Services() {
                 type="button"
                 className="services-page-arrow"
                 onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                disabled={currentPage === 1}
+                disabled={visiblePage === 1}
                 aria-label="Previous services page"
               >
                 <span aria-hidden="true">←</span> Previous
               </button>
               <span className="services-page-count" aria-live="polite">
-                <span>{String(currentPage).padStart(2, "0")}</span>
+                <span>{String(visiblePage).padStart(2, "0")}</span>
                 <span className="services-page-divider">/</span>
                 {String(totalPages).padStart(2, "0")}
               </span>
@@ -318,7 +315,7 @@ export default function Services() {
                 type="button"
                 className="services-page-arrow"
                 onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                disabled={currentPage === totalPages}
+                disabled={visiblePage === totalPages}
                 aria-label="Next services page"
               >
                 Next <span aria-hidden="true">→</span>

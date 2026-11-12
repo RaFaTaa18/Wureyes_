@@ -4,6 +4,8 @@ import "../styles/cinematicReveal.css";
 import { useCinematicReveal } from "../hooks/useCinematicReveal";
 import { clearInputError, shakeInput } from "../utils/inputShake";
 
+const API_URL = import.meta.env.VITE_API_URL || "";
+
 interface Testimonial {
   id: number;
   client_name: string;
@@ -24,8 +26,6 @@ export default function About() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState("");
-  const API_URL = import.meta.env.VITE_API_URL || "";
-
   async function submitTestimonial(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);

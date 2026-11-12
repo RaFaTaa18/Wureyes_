@@ -74,14 +74,11 @@ export default function PhotoSelection() {
     useState("");
 
   useEffect(() => {
-    if (!token) {
-      setError("Link seleksi tidak valid.");
-      setLoading(false);
-      return;
-    }
-
     async function loadGallery() {
       try {
+        if (!token) {
+          throw new Error("Link seleksi tidak valid.");
+        }
         setLoading(true);
         setError("");
 
@@ -121,7 +118,7 @@ export default function PhotoSelection() {
       }
     }
 
-    loadGallery();
+    void Promise.resolve().then(() => loadGallery());
   }, [token]);
 
   function togglePhoto(id: string) {
