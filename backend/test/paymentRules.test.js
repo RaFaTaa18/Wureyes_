@@ -174,3 +174,43 @@ test("invoice totals cannot be reduced below previously received payments", asyn
   const bookings = await readFile(new URL("../src/routes/bookings.js", import.meta.url), "utf8");
   assert.match(bookings, /invoiceTotal \+ 0\.009 < totalBefore/);
 });
+
+
+test("new booking creation atomically creates its initial workflow progress", async () => {
+  const bookings = await readFile(
+    new URL("../src/routes/bookings.js", import.meta.url),
+    "utf8"
+  );
+  const start = bookings.indexOf(
+    'router.post("/", bookingSubmissionRateLimit, async (req, res) => {'
+  );
+  const end = bookings.indexOf(
+    "// UPDATE BOOKING - ADMIN ONLY",
+    start
+  );
+
+  assert.ok(start >= 0 && end > start, "public booking route must exist");
+
+  const route = bookings.slice(start, end);
+
+  assert.match(route, /pool\.getConnection\(\)/);
+  assert.match(route, /await connection\.beginTransaction\(\)/);
+  assert.match(route, /FOR SHARE/);
+  assert.match(route, /service_price_snapshot/);
+  assert.match(route, /INSERT INTO booking_progress\s*\(booking_id, current_stage\)\s*VALUES\s*\(\?, 'booking_received'\)/);
+  assert.match(route, /await connection\.commit\(\)/);
+  assert.match(route, /await connection\.rollback\(\)/);
+  assert.match(route, /connection\.release\(\)/);
+});
+
+test("admin workflow fallback maps completed bookings to final delivery", async () => {
+  const workflow = await readFile(
+    new URL("../../src/admin/AdminWorkflow.tsx", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(
+    workflow,
+    /item\.status === "completed"\s*\?\s*"final_delivery"/
+  );
+});

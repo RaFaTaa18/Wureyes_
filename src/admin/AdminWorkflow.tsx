@@ -86,7 +86,13 @@ export default function AdminWorkflow() {
 
   function choose(item: WorkflowBooking) {
     setSelectedId(item.id);
-    setStage(item.current_stage || (item.status === "confirmed" ? "booking_confirmed" : "booking_received"));
+    setStage(item.current_stage || (
+      item.status === "completed"
+        ? "final_delivery"
+        : item.status === "confirmed"
+          ? "booking_confirmed"
+          : "booking_received"
+    ));
     setClientNote(item.client_note || "");
     setInternalNote(item.internal_note || "");
     setDeliveryDate(item.estimated_delivery_date ? String(item.estimated_delivery_date).slice(0, 10) : "");

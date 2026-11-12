@@ -96,6 +96,8 @@ router.get(
 // ===============================
 
 router.post("/", bookingSubmissionRateLimit, async (req, res) => {
+  let connection;
+
   try {
     const body = req.body ?? {};
     const client_name = typeof body.client_name === "string" ? body.client_name.trim() : "";
@@ -134,24 +136,30 @@ router.post("/", bookingSubmissionRateLimit, async (req, res) => {
       });
     }
 
-    const [services] = await pool.query(
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    const [services] = await connection.query(
       `
       SELECT id, price
       FROM services
       WHERE id = ?
-      AND is_active = TRUE
+        AND is_active = TRUE
+      LIMIT 1
+      FOR SHARE
       `,
       [service_id]
     );
 
     if (services.length === 0) {
+      await connection.rollback();
       return res.status(400).json({
         success: false,
         message: "Service not found or inactive",
       });
     }
 
-    const [result] = await pool.query(
+    const [result] = await connection.query(
       `
       INSERT INTO bookings
       (
@@ -178,7 +186,17 @@ router.post("/", bookingSubmissionRateLimit, async (req, res) => {
       ]
     );
 
-    res.status(201).json({
+    await connection.query(
+      `
+      INSERT INTO booking_progress (booking_id, current_stage)
+      VALUES (?, 'booking_received')
+      `,
+      [result.insertId]
+    );
+
+    await connection.commit();
+
+    return res.status(201).json({
       success: true,
       message: "Booking submitted successfully",
       data: {
@@ -186,12 +204,15 @@ router.post("/", bookingSubmissionRateLimit, async (req, res) => {
       },
     });
   } catch (error) {
+    if (connection) await connection.rollback();
     console.error("Create booking error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to create booking",
     });
+  } finally {
+    if (connection) connection.release();
   }
 });
 
